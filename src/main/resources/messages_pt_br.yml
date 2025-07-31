@@ -1,0 +1,114 @@
+# Vote2Sleep Messages - Português Brasileiro
+# Use & para códigos de cor
+# Placeholders disponíveis: {player}, {world}, {current}, {required}, {remaining}, {seconds}, {admin}
+
+# ===================================
+# MENSAGENS GERAIS
+# ===================================
+prefix: "&8[&bVote2Sleep&8] &r"
+
+# Mensagens de erro
+world-not-enabled: "&cVote2Sleep não está ativado neste mundo!"
+player-exempt: "&cVocê está isento da votação de sono!"
+cannot-sleep-now: "&cVocê só pode votar para dormir durante a noite ou tempestades!"
+already-voted: "&cVocê já votou para dormir!"
+no-permission: "&cVocê não tem permissão para usar este comando!"
+
+# Mensagens de votação
+vote-removed: "&aSeu voto para dormir foi removido!"
+vote-cast: "&a{current}&7/&a{required} &7jogadores votaram para dormir! &8(&c{remaining} &7restantes)"
+vote-timeout: "&cA votação para dormir expirou! Todos os votos foram limpos."
+
+# Mensagens de pular
+skip-countdown: "&eA noite será pulada em &a{seconds} &esegundos..."
+night-skipped: "&aA noite foi pulada! Bom dia, flor do dia! &f✨"
+storm-skipped: "&aA tempestade foi limpa! O sol está brilhando novamente! &e☀"
+force-skip-by-admin: "&e{admin} &aforçou a noite a ser pulada!"
+
+# Mensagens administrativas
+world-enabled: "&aVote2Sleep ativado para o mundo &e{world}&a!"
+world-disabled: "&cVote2Sleep desativado para o mundo &e{world}&c!"
+already-enabled: "&cVote2Sleep já está ativado neste mundo!"
+already-disabled: "&cVote2Sleep já está desativado neste mundo!"
+reload-success: "&aConfiguração do Vote2Sleep recarregada com sucesso!"
+statistics-cleared: "&aEstatísticas foram limpas!"
+world-enabled-notice: "&aVote2Sleep está ativado neste mundo! Use /sleep para votar."
+world-disabled-notice: "&cVote2Sleep está desativado neste mundo."
+votes-cancelled-by-admin: "&c{admin} &ecancelou todos os votos para dormir!"
+weather-cleared-votes-cancelled: "&eO tempo clareou! Os votos para dormir foram cancelados."
+
+# ===================================
+# MENSAGENS DE EXIBIÇÃO
+# ===================================
+# Boss bar
+boss-bar-title: "Votação de Sono: {current}/{required}"
+
+# Títulos
+skip-title: "&a&lNoite Pulada!"
+skip-subtitle: "&eBom dia, flor do dia! &f✨"
+
+# Action bar
+vote-cast-actionbar: "&a{player} &7votou para dormir! &8(&a{current}&7/&a{required}&8)"
+
+# ===================================
+# AJUDA DE COMANDOS
+# ===================================
+help:
+  header: "&b&l=== Ajuda do Vote2Sleep ==="
+  vote: "&e/sleep &7- Votar para pular noite ou tempestade"
+  status: "&e/sleep status &7- Verificar status atual da votação"
+  enable: "&e/sleep enable &7- Ativar plugin no mundo atual"
+  disable: "&e/sleep disable &7- Desativar plugin no mundo atual"
+  reload: "&e/sleep reload &7- Recarregar configuração"
+  stats: "&e/sleep stats &7- Ver estatísticas do plugin"
+  cancel: "&e/sleep cancel &7- Cancelar votos atuais"
+  force: "&e/sleep force &7- Forçar pular noite/tempestade"
+  help: "&e/sleep help &7- Mostrar esta mensagem de ajuda"
+
+# ===================================
+# MENSAGENS DE STATUS
+# ===================================
+status:
+  header: "&b&l=== Status do Vote2Sleep ==="
+  world: "&7Mundo: &e{world}"
+  current-votes: "&7Votos Atuais: &a{current}&7/&a{required}"
+  you-voted: "&7Você Votou: {status}"
+  can-sleep: "&7Pode Dormir: {status}"
+  progress: "&7Progresso: &e{progress}%"
+  time-remaining: "&7Tempo Restante: &e{time} segundos"
+
+# Valores de status
+status-yes: "&aSim"
+status-no: "&cNão"
+
+# ===================================
+# MENSAGENS DE ESTATÍSTICAS
+# ===================================
+stats:
+  header: "&b&l=== Estatísticas do Vote2Sleep ==="
+  plugin-version: "&7Versão do Plugin: &e{version}"
+  platform: "&7Plataforma: &e{platform}"
+  enabled-worlds: "&7Mundos Ativos: &e{count}"
+  server-tps: "&7TPS do Servidor: &e{tps}"
+  total-skips: "&7Total de Noites Puladas: &e{skips}"
+  database-status: "&7Banco de Dados: {status}"
+
+# ===================================
+# DESCRIÇÕES DOS PLACEHOLDERS
+# ===================================
+# Estas não são exibidas no jogo, apenas para referência
+# {player} - Nome do jogador
+# {world} - Nome do mundo
+# {current} - Número atual de votos
+# {required} - Número necessário de votos
+# {remaining} - Votos restantes necessários
+# {seconds} - Segundos da contagem regressiva
+# {admin} - Nome do administrador
+# {status} - Status Sim/Não
+# {progress} - Percentual de progresso
+# {time} - Tempo restante
+# {version} - Versão do plugin
+# {platform} - Plataforma do servidor
+# {count} - Contagem numérica
+# {tps} - TPS do servidor
+# {skips} - Número de pulos

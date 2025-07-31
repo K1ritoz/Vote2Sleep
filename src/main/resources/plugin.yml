@@ -1,0 +1,82 @@
+name: Vote2Sleep
+version: '${version}'
+main: com.github.k1ritoz.vote2Sleep.Vote2Sleep
+api-version: '1.21'
+folia-supported: true
+load: STARTUP
+authors: [ K1ritoz ]
+website: https://github.com/K1ritoz/Vote2Sleep
+description: A modern sleep voting plugin for Minecraft servers
+softdepend: [ PlaceholderAPI, WorldGuard, Essentials ]
+
+# Commands
+commands:
+  sleep:
+    description: Vote to skip night or storm
+    usage: /sleep [vote|status|enable|disable|reload|stats|cancel|force|help]
+    aliases: [ sleepvote, nightskip ]
+    permission: vote2sleep.use
+
+  v2s:
+    description: Vote2Sleep main command
+    usage: /v2s [vote|status|enable|disable|reload|stats|cancel|force|help]
+    aliases: [ vote2sleep ]
+    permission: vote2sleep.use
+
+# Permissions
+permissions:
+  vote2sleep.*:
+    description: All Vote2Sleep permissions
+    children:
+      vote2sleep.use: true
+      vote2sleep.admin: true
+      vote2sleep.force: true
+      vote2sleep.cancel: true
+      vote2sleep.stats: true
+      vote2sleep.config: true
+    default: op
+
+  vote2sleep.use:
+    description: Basic permission to use sleep voting
+    default: true
+
+  vote2sleep.admin:
+    description: Permission to use admin commands
+    children:
+      vote2sleep.use: true
+      vote2sleep.reload: true
+      vote2sleep.enable: true
+      vote2sleep.disable: true
+    default: op
+
+  vote2sleep.force:
+    description: Permission to force skip night/storm
+    default: op
+
+  vote2sleep.cancel:
+    description: Permission to cancel votes
+    default: op
+
+  vote2sleep.stats:
+    description: Permission to view statistics
+    default: op
+
+  vote2sleep.config:
+    description: Permission to modify config in-game
+    default: op
+
+  vote2sleep.reload:
+    description: Permission to reload configuration
+    default: op
+
+  vote2sleep.enable:
+    description: Permission to enable plugin in worlds
+    default: op
+
+  vote2sleep.disable:
+    description: Permission to disable plugin in worlds
+    default: op
+
+  vote2sleep.exempt:
+    description: Exempts player from sleep voting requirements
+    default: false

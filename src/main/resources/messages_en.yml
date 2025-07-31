@@ -1,0 +1,114 @@
+# Vote2Sleep Messages
+# Use & for color codes
+# Available placeholders: {player}, {world}, {current}, {required}, {remaining}, {seconds}, {admin}
+
+# ===================================
+# GENERAL MESSAGES
+# ===================================
+prefix: "&8[&bVote2Sleep&8] &r"
+
+# Error messages
+world-not-enabled: "&cVote2Sleep is not enabled in this world!"
+player-exempt: "&cYou are exempt from sleep voting!"
+cannot-sleep-now: "&cYou can only vote for sleep during night or storms!"
+already-voted: "&cYou have already voted for sleep!"
+no-permission: "&cYou don't have permission to use this command!"
+
+# Vote messages
+vote-removed: "&aYour sleep vote has been removed!"
+vote-cast: "&a{current}&7/&a{required} &7players voted for sleep! &8(&c{remaining} &7remaining)"
+vote-timeout: "&cSleep vote has timed out! All votes have been cleared."
+
+# Skip messages
+skip-countdown: "&eNight will be skipped in &a{seconds} &eseconds..."
+night-skipped: "&aThe night has been skipped! Good morning, sunshine! &f✨"
+storm-skipped: "&aThe storm has been cleared! The sun is shining again! &e☀"
+force-skip-by-admin: "&e{admin} &ahas forced the night to be skipped!"
+
+# Admin messages
+world-enabled: "&aVote2Sleep enabled for world &e{world}&a!"
+world-disabled: "&cVote2Sleep disabled for world &e{world}&c!"
+already-enabled: "&cVote2Sleep is already enabled in this world!"
+already-disabled: "&cVote2Sleep is already disabled in this world!"
+reload-success: "&aVote2Sleep configuration reloaded successfully!"
+statistics-cleared: "&aStatistics have been cleared!"
+world-enabled-notice: "&aVote2Sleep is enabled in this world! Use /sleep to vote."
+world-disabled-notice: "&cVote2Sleep is disabled in this world."
+votes-cancelled-by-admin: "&c{admin} &ehas cancelled all sleep votes!"
+weather-cleared-votes-cancelled: "&eWeather has cleared! Sleep votes have been cancelled."
+
+# ===================================
+# DISPLAY MESSAGES
+# ===================================
+# Boss bar
+boss-bar-title: "Sleep Vote: {current}/{required}"
+
+# Titles
+skip-title: "&a&lNight Skipped!"
+skip-subtitle: "&eGood morning, sunshine! &f✨"
+
+# Action bar
+vote-cast-actionbar: "&a{player} &7voted for sleep! &8(&a{current}&7/&a{required}&8)"
+
+# ===================================
+# COMMAND HELP
+# ===================================
+help:
+  header: "&b&l=== Vote2Sleep Help ==="
+  vote: "&e/sleep &7- Vote to skip night or storm"
+  status: "&e/sleep status &7- Check current vote status"
+  enable: "&e/sleep enable &7- Enable plugin in current world"
+  disable: "&e/sleep disable &7- Disable plugin in current world"
+  reload: "&e/sleep reload &7- Reload configuration"
+  stats: "&e/sleep stats &7- View plugin statistics"
+  cancel: "&e/sleep cancel &7- Cancel current votes"
+  force: "&e/sleep force &7- Force skip night/storm"
+  help: "&e/sleep help &7- Show this help message"
+
+# ===================================
+# STATUS MESSAGES
+# ===================================
+status:
+  header: "&b&l=== Vote2Sleep Status ==="
+  world: "&7World: &e{world}"
+  current-votes: "&7Current Votes: &a{current}&7/&a{required}"
+  you-voted: "&7You Voted: {status}"
+  can-sleep: "&7Can Sleep: {status}"
+  progress: "&7Progress: &e{progress}%"
+  time-remaining: "&7Time Remaining: &e{time} seconds"
+
+# Status values
+status-yes: "&aYes"
+status-no: "&cNo"
+
+# ===================================
+# STATISTICS MESSAGES
+# ===================================
+stats:
+  header: "&b&l=== Vote2Sleep Statistics ==="
+  plugin-version: "&7Plugin Version: &e{version}"
+  platform: "&7Platform: &e{platform}"
+  enabled-worlds: "&7Enabled Worlds: &e{count}"
+  server-tps: "&7Server TPS: &e{tps}"
+  total-skips: "&7Total Night Skips: &e{skips}"
+  database-status: "&7Database: {status}"
+
+# ===================================
+# PLACEHOLDER DESCRIPTIONS
+# ===================================
+# These are not displayed in-game, just for reference
+# {player} - Player name
+# {world} - World name
+# {current} - Current number of votes
+# {required} - Required number of votes
+# {remaining} - Remaining votes needed
+# {seconds} - Countdown seconds
+# {admin} - Admin name
+# {status} - Yes/No status
+# {progress} - Progress percentage
+# {time} - Time remaining
+# {version} - Plugin version
+# {platform} - Server platform
+# {count} - Number count
+# {tps} - Server TPS
+# {skips} - Number of skips

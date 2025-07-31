@@ -1,0 +1,112 @@
+# Vote2Sleep Configuration
+# A modern sleep voting plugin for Minecraft servers
+
+# ===================================
+# GENERAL SETTINGS
+# ===================================
+settings:
+  # Language file to use (en, pt_br)
+  # Available: messages_en.yml, messages_pt_br.yml
+  language: "en"
+
+  # Percentage of online players required to skip night/storm (0.1 = 10%, 0.5 = 50%, etc.)
+  vote-percentage: 0.5
+
+  # Minimum number of players required to vote (regardless of percentage)
+  minimum-players: 1
+
+  # Maximum number of players required to vote (-1 for no limit)
+  maximum-players: -1
+
+  # Delay in seconds before skipping night/storm after requirements are met
+  skip-delay-seconds: 3
+
+  # Time in seconds before votes automatically expire
+  vote-timeout-seconds: 60
+
+  # Allow skipping storms during day time
+  allow-storm-skip: true
+
+  # Allow skipping night time
+  allow-night-skip: true
+
+  # Reset player phantom statistics when night is skipped
+  reset-statistics: true
+
+  # Heal players when night is skipped
+  heal-players: false
+
+  # Feed players when night is skipped
+  feed-players: false
+
+  # Clear weather when night/storm is skipped
+  clear-weather: true
+
+# ===================================
+# DISPLAY SETTINGS
+# ===================================
+display:
+  # Boss bar settings
+  boss-bar:
+    enabled: true
+    color: "BLUE"  # PINK, BLUE, RED, GREEN, YELLOW, PURPLE, WHITE
+    style: "SOLID"  # SOLID, SEGMENTED_6, SEGMENTED_10, SEGMENTED_12, SEGMENTED_20
+
+  # Title messages
+  titles:
+    enabled: true
+    fade-in: 10   # Ticks
+    stay: 70      # Ticks
+    fade-out: 20  # Ticks
+
+  # Sound effects
+  sounds:
+    enabled: true
+    vote-sound: "BLOCK_NOTE_BLOCK_CHIME"
+    skip-sound: "ENTITY_EXPERIENCE_ORB_PICKUP"
+
+  # Action bar messages
+  actionbar:
+    enabled: true
+
+# ===================================
+# ADVANCED SETTINGS
+# ===================================
+advanced:
+  # Database settings (for statistics tracking)
+  database:
+    enabled: false
+    type: "SQLITE"  # SQLITE or MYSQL
+
+  # MySQL settings (only used if type is MYSQL)
+  mysql:
+    host: "localhost"
+    port: 3306
+    database: "vote2sleep"
+    username: "root"
+    password: "password"
+    ssl: false
+
+  # Check for updates on startup
+  update-checker: true
+
+  # Enable debug mode (more verbose logging)
+  debug-mode: false
+
+  # Enable metrics collection (bStats)
+  metrics: true
+
+  # Game modes exempt from voting
+  exempt-gamemodes:
+    - "SPECTATOR"
+    - "CREATIVE"
+
+  # Permissions that exempt players from voting
+  exempt-permissions:
+    - "vote2sleep.exempt"
+
+# ===================================
+# WORLD SETTINGS
+# ===================================
+# World-specific settings are stored in worlds.yml
+# Use /v2s enable and /v2s disable commands to manage worlds
