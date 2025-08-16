@@ -4,6 +4,8 @@ import com.github.k1ritoz.vote2Sleep.Vote2Sleep;
 import com.github.k1ritoz.vote2Sleep.api.events.*;
 import com.github.k1ritoz.vote2Sleep.data.SleepVote;
 import com.github.k1ritoz.vote2Sleep.data.WorldData;
+import com.github.k1ritoz.vote2Sleep.platform.FoliaAdapter;
+import com.github.k1ritoz.vote2Sleep.platform.PurpurAdapter;
 import org.bukkit.*;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
@@ -125,9 +127,9 @@ public class SleepVoteManager {
 
         int delay = plugin.getConfigManager().getSkipDelaySeconds() * 20;
 
-        // IMPORTANT: Use global scheduler for world operations in Folia
+        // Use global scheduler for the countdown, but world operations will use region scheduler
         BukkitTask task = plugin.getPlatformAdapter().runTaskLater(() -> {
-            // Final check
+            // Final check before executing skip
             if (areRequirementsMet(world)) {
                 executeNightSkip(world);
             }
@@ -135,11 +137,12 @@ public class SleepVoteManager {
 
         skipTasks.put(world.getUID(), task);
 
-        // Send countdown message
-        plugin.getMessageManager().sendWorldMessage(world, "skip-countdown",
-                Map.of("seconds", String.valueOf(plugin.getConfigManager().getSkipDelaySeconds())));
+        // Send countdown message using global scheduler
+        plugin.getPlatformAdapter().runTaskLater(() -> {
+            plugin.getMessageManager().sendWorldMessage(world, "skip-countdown",
+                    Map.of("seconds", String.valueOf(plugin.getConfigManager().getSkipDelaySeconds())));
+        }, 1L);
     }
-
     private void scheduleVoteTimeout(World world) {
         cancelVoteTimeoutTask(world);
 
@@ -185,62 +188,110 @@ public class SleepVoteManager {
     }
 
     private void performSkipActions(World world, List<SleepVote> votes) {
-        // Execute world operations on global thread for Folia compatibility
-        plugin.getPlatformAdapter().runTaskLater(() -> {
+        // WORLD OPERATIONS - For Folia, setTime() and weather must use GLOBAL scheduler
+        plugin.getPlatformAdapter().runTaskLaterForWorld(world, (w) -> {
             try {
-                // Skip time
-                if (isNight(world) && plugin.getConfigManager().isNightSkipAllowed()) {
-                    world.setTime(1000); // Morning
-                }
+                // Use Purpur optimizations if available
+                if (plugin.getPlatformAdapter() instanceof PurpurAdapter) {
+                    PurpurAdapter purpurAdapter = (PurpurAdapter) plugin.getPlatformAdapter();
 
-                // Clear weather
-                if (plugin.getConfigManager().shouldClearWeather()) {
-                    world.setStorm(false);
-                    world.setThundering(false);
-                }
+                    // Skip time with Purpur optimization
+                    if (isNight(w) && plugin.getConfigManager().isNightSkipAllowed()) {
+                        purpurAdapter.setWorldTimeOptimized(w, 1000);
+                    }
 
-                // Reset phantom statistics and heal/feed players
-                for (SleepVote vote : votes) {
-                    Player player = Bukkit.getPlayer(vote.getPlayerUUID());
-                    if (player != null && player.isOnline()) {
-                        // Schedule player operations on player's thread for Folia
-                        plugin.getPlatformAdapter().runTaskLaterForPlayer(player, (p) -> {
-                            try {
-                                // Reset phantom statistics
-                                if (plugin.getConfigManager().shouldResetStatistics()) {
-                                    try {
-                                        p.setStatistic(Statistic.TIME_SINCE_REST, 0);
-                                    } catch (Exception e) {
-                                        // Statistic might not exist in older versions
-                                    }
-                                }
+                    // Clear weather with Purpur optimization
+                    if (plugin.getConfigManager().shouldClearWeather()) {
+                        purpurAdapter.clearWeatherOptimized(w);
+                    }
+                } else {
+                    // Standard operations - in Folia these operations run on global thread
+                    if (isNight(w) && plugin.getConfigManager().isNightSkipAllowed()) {
+                        w.setTime(1000);
+                    }
 
-                                // Heal and feed players
-                                if (plugin.getConfigManager().shouldHealPlayers()) {
-                                    p.setHealth(p.getMaxHealth());
-                                }
-                                if (plugin.getConfigManager().shouldFeedPlayers()) {
-                                    p.setFoodLevel(20);
-                                    p.setSaturation(20.0f);
-                                }
-                            } catch (Exception e) {
-                                plugin.getLogger().warning("Error performing player actions for " + p.getName() + ": " + e.getMessage());
-                            }
-                        }, 1L);
+                    if (plugin.getConfigManager().shouldClearWeather()) {
+                        w.setStorm(false);
+                        w.setThundering(false);
                     }
                 }
 
-                // Send messages and effects (schedule on global thread)
-                plugin.getPlatformAdapter().runTaskLater(() -> {
-                    plugin.getMessageManager().sendWorldMessage(world, "night-skipped");
-                    plugin.getEffectsManager().playSkipEffects(world, votes);
-                }, 2L);
-
             } catch (Exception e) {
-                plugin.getLogger().severe("Error performing skip actions: " + e.getMessage());
+                plugin.getLogger().warning("Error performing world skip actions: " + e.getMessage());
                 e.printStackTrace();
             }
         }, 1L);
+
+        // PLAYER OPERATIONS - each player needs its own task for Folia
+        for (SleepVote vote : votes) {
+            Player player = Bukkit.getPlayer(vote.getPlayerUUID());
+            if (player != null && player.isOnline()) {
+                plugin.getPlatformAdapter().runTaskLaterForPlayer(player, (p) -> {
+                    try {
+                        // Reset phantom statistics
+                        if (plugin.getConfigManager().shouldResetStatistics()) {
+                            try {
+                                p.setStatistic(Statistic.TIME_SINCE_REST, 0);
+                            } catch (Exception e) {
+                                // Silent fail for older versions
+                            }
+                        }
+
+                        // Heal and feed players
+                        if (plugin.getConfigManager().shouldHealPlayers()) {
+                            p.setHealth(p.getMaxHealth());
+                        }
+                        if (plugin.getConfigManager().shouldFeedPlayers()) {
+                            p.setFoodLevel(20);
+                            p.setSaturation(20.0f);
+                        }
+
+                        // Use Purpur optimization if available
+                        if (plugin.getPlatformAdapter() instanceof PurpurAdapter) {
+                            ((PurpurAdapter) plugin.getPlatformAdapter()).optimizePlayerOperation(p, () -> {
+                                // Additional Purpur optimizations here if needed
+                            });
+                        }
+                    } catch (Exception e) {
+                        plugin.getLogger().warning("Error performing player actions for " + p.getName() + ": " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }, 2L); // Delay slightly to ensure world operations complete first
+            }
+        }
+
+        // MESSAGES - use global scheduler
+        plugin.getPlatformAdapter().runTaskLater(() -> {
+            try {
+                plugin.getMessageManager().sendWorldMessage(world, "night-skipped");
+            } catch (Exception e) {
+                plugin.getLogger().warning("Error sending skip messages: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }, 3L);
+
+        // EFFECTS - for effects that need specific coordinates, use region
+        if (plugin.getPlatformAdapter() instanceof FoliaAdapter) {
+            FoliaAdapter foliaAdapter = (FoliaAdapter) plugin.getPlatformAdapter();
+            foliaAdapter.runRegionSpecificEffects(world, (w) -> {
+                try {
+                    plugin.getEffectsManager().playSkipEffects(w, votes);
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Error playing skip effects: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }, 4L);
+        } else {
+            // For other platforms, use normal scheduler
+            plugin.getPlatformAdapter().runTaskLater(() -> {
+                try {
+                    plugin.getEffectsManager().playSkipEffects(world, votes);
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Error playing skip effects: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }, 4L);
+        }
     }
 
     // Utility methods
@@ -361,9 +412,9 @@ public class SleepVoteManager {
             for (Player player : world.getPlayers()) {
                 plugin.getMessageManager().sendActionBar(player, "vote-cast-actionbar",
                         Map.of("player", voter.getName(),
-                        "current", String.valueOf(currentVotes),
-                        "required", String.valueOf(requiredVotes),
-                        "remaining", String.valueOf(requiredVotes - currentVotes)));
+                                "current", String.valueOf(currentVotes),
+                                "required", String.valueOf(requiredVotes),
+                                "remaining", String.valueOf(requiredVotes - currentVotes)));
             }
         }
     }

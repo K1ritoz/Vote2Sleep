@@ -9,6 +9,7 @@ import com.github.k1ritoz.vote2Sleep.platform.PlatformAdapter;
 import com.github.k1ritoz.vote2Sleep.platform.PlatformDetector;
 import com.github.k1ritoz.vote2Sleep.utils.UpdateChecker;
 
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class Vote2Sleep extends JavaPlugin {
@@ -52,6 +53,11 @@ public final class Vote2Sleep extends JavaPlugin {
             // Initialize API
             this.api = new Vote2SleepAPI(this);
 
+            // Initialize bStats metrics
+            if (configManager.isMetricsEnabled()) {
+                initializeMetrics();
+            }
+
             // Check for updates
             if (configManager.isUpdateCheckEnabled()) {
                 new UpdateChecker(this, "https://api.github.com/repos/k1ritoz/Vote2Sleep/releases/latest")
@@ -65,6 +71,50 @@ public final class Vote2Sleep extends JavaPlugin {
             getLogger().severe("Failed to enable Vote2Sleep: " + e.getMessage());
             e.printStackTrace();
             getServer().getPluginManager().disablePlugin(this);
+        }
+    }
+
+    // Initialize bStats metrics
+    private void initializeMetrics() {
+        try {
+            // Plugin ID from bStats
+            int pluginId = 26722;
+
+            org.bstats.bukkit.Metrics metrics = new org.bstats.bukkit.Metrics(this, pluginId);
+
+            // Custom metrics with null checks
+
+            // 1. Platform being used
+            metrics.addCustomChart(new org.bstats.charts.SimplePie("platform", () -> {
+                try {
+                    return getPlatformAdapter().getPlatformName().toLowerCase();
+                } catch (Exception e) {
+                    return "unknown";
+                }
+            }));
+
+            // 2. Folia usage chart
+            metrics.addCustomChart(new org.bstats.charts.SimplePie("server_software", () -> {
+                try {
+                    String serverName = Bukkit.getServer().getName();
+                    if (serverName.toLowerCase().contains("folia")) {
+                        return "Folia";
+                    } else if (serverName.toLowerCase().contains("paper")) {
+                        return "Paper";
+                    } else if (serverName.toLowerCase().contains("purpur")) {
+                        return "Purpur";
+                    } else if (serverName.toLowerCase().contains("spigot")) {
+                        return "Spigot";
+                    } else {
+                        return "Other";
+                    }
+                } catch (Exception e) {
+                    return "Unknown";
+                }
+            }));
+
+        } catch (Exception e) {
+            // Don't fail plugin loading if metrics fail
         }
     }
 

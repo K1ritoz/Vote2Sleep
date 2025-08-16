@@ -88,51 +88,48 @@ public class FoliaAdapter implements PlatformAdapter {
 
     @Override
     public BukkitTask runTaskLaterForWorld(World world, Consumer<World> task, long delay) {
-        // Use region scheduler for world-specific operations
-        try {
-            Object scheduler = Bukkit.class.getMethod("getRegionScheduler").invoke(null);
-            Object scheduledTask = scheduler.getClass()
-                    .getMethod("runDelayed", org.bukkit.plugin.Plugin.class,
-                            org.bukkit.World.class, int.class, int.class,
-                            java.util.function.Consumer.class, long.class)
-                    .invoke(scheduler, plugin, world, 0, 0, // chunk coordinates (0,0 is safe for world operations)
-                            (java.util.function.Consumer<Object>) (t) -> {
-                                try {
-                                    task.accept(world);
-                                } catch (Exception e) {
-                                    plugin.getLogger().warning("Error in Folia world task: " + e.getMessage());
-                                }
-                            }, delay);
-            return new FoliaTaskWrapper(scheduledTask);
-        } catch (Exception e) {
-            plugin.getLogger().warning("Failed to schedule Folia world task, falling back to global scheduler: " + e.getMessage());
-            // Fallback to global scheduler
-            return runTaskLater(() -> task.accept(world), delay);
-        }
+        // IMPORTANT: For operations like setTime(), use GLOBAL scheduler in Folia
+        // World operations like time and weather must be executed on global thread
+        return runTaskLater(() -> task.accept(world), delay);
     }
 
     @Override
     public BukkitTask runTaskTimerForWorld(World world, Consumer<World> task, long delay, long period) {
-        // Use region scheduler for world-specific operations
+        // IMPORTANT: For operations like setTime(), use GLOBAL scheduler in Folia
+        return runTaskTimer(() -> task.accept(world), delay, period);
+    }
+
+    /**
+     * For operations that really need the region thread (like spawning entities at specific locations)
+     */
+    public BukkitTask runTaskLaterForWorldRegion(World world, Consumer<World> task, long delay) {
         try {
             Object scheduler = Bukkit.class.getMethod("getRegionScheduler").invoke(null);
+
+            // Use spawn location for scheduling
+            int chunkX = world.getSpawnLocation().getBlockX() >> 4;
+            int chunkZ = world.getSpawnLocation().getBlockZ() >> 4;
+
             Object scheduledTask = scheduler.getClass()
-                    .getMethod("runAtFixedRate", org.bukkit.plugin.Plugin.class,
+                    .getMethod("runDelayed", org.bukkit.plugin.Plugin.class,
                             org.bukkit.World.class, int.class, int.class,
-                            java.util.function.Consumer.class, long.class, long.class)
-                    .invoke(scheduler, plugin, world, 0, 0, // chunk coordinates
+                            java.util.function.Consumer.class, long.class)
+                    .invoke(scheduler, plugin, world, chunkX, chunkZ,
                             (java.util.function.Consumer<Object>) (t) -> {
                                 try {
+                                    // Execute on the region thread
                                     task.accept(world);
                                 } catch (Exception e) {
-                                    plugin.getLogger().warning("Error in Folia world timer task: " + e.getMessage());
+                                    plugin.getLogger().warning("Error in Folia world region task: " + e.getMessage());
+                                    e.printStackTrace();
                                 }
-                            }, delay, period);
+                            }, delay);
             return new FoliaTaskWrapper(scheduledTask);
         } catch (Exception e) {
-            plugin.getLogger().warning("Failed to schedule Folia world timer task, falling back to global scheduler: " + e.getMessage());
+            plugin.getLogger().warning("Failed to schedule Folia world region task, falling back to global scheduler: " + e.getMessage());
+            e.printStackTrace();
             // Fallback to global scheduler
-            return runTaskTimer(() -> task.accept(world), delay, period);
+            return runTaskLater(() -> task.accept(world), delay);
         }
     }
 
@@ -173,7 +170,15 @@ public class FoliaAdapter implements PlatformAdapter {
 
     @Override
     public boolean isAsyncSafe() {
-        return false; // Folia has strict threading
+        return false; // Folia requires specific thread handling
+    }
+
+    /**
+     * Specific method for effects that need the region thread
+     * (like spawning entities at specific coordinates)
+     */
+    public BukkitTask runRegionSpecificEffects(World world, Consumer<World> effectsTask, long delay) {
+        return runTaskLaterForWorldRegion(world, effectsTask, delay);
     }
 
     private int getMinecraftVersion() {

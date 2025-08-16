@@ -4,9 +4,15 @@ import org.bukkit.Bukkit;
 
 public class PlatformDetector {
     public static PlatformAdapter createAdapter() {
+
         // Check for Folia first (most specific)
         if (isFoliaPresent()) {
             return new FoliaAdapter();
+        }
+
+        // Check for Purpur
+        if (isPurpurPresent()) {
+            return new PurpurAdapter();
         }
 
         // Check for Paper
@@ -38,6 +44,23 @@ public class PlatformDetector {
                 return false;
             }
         } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+
+    private static boolean isPurpurPresent() {
+        try {
+            // Try to detect via Purpur-specific classes
+            Class.forName("org.purpurmc.purpur.PurpurConfig");
+            Class.forName("org.purpurmc.purpur.PurpurServer");
+            return true;
+        } catch (ClassNotFoundException e) {
+            // Fallback: check if version contains "purpur"
+            String version = Bukkit.getVersion().toLowerCase();
+            String name = Bukkit.getName().toLowerCase();
+            if (version.contains("purpur") || name.contains("purpur")) {
+                return true;
+            }
             return false;
         }
     }

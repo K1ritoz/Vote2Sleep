@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'com.github.k1ritoz'
-version = '1.0.0'
+version = '1.1.0'
 
 repositories {
     mavenCentral()
@@ -45,6 +45,9 @@ dependencies {
         exclude group: "org.spigotmc", module: "spigot-api"
     }
 
+    // bStats dependency (Maven Central)
+    implementation("org.bstats:bstats-bukkit:3.1.0")
+
     // Database dependencies (shaded)
     implementation("org.xerial:sqlite-jdbc:3.44.1.0")
     implementation("com.mysql:mysql-connector-j:8.2.0")
@@ -73,6 +76,7 @@ tasks {
         archiveClassifier.set('')
 
         // Relocate shaded dependencies to avoid conflicts
+        relocate 'org.bstats', 'com.github.k1ritoz.vote2sleep.lib.bstats'
         relocate 'org.sqlite', 'com.github.k1ritoz.vote2sleep.lib.sqlite'
         relocate 'com.mysql', 'com.github.k1ritoz.vote2sleep.lib.mysql'
         relocate 'org.apache.commons.lang3', 'com.github.k1ritoz.vote2sleep.lib.commons'
@@ -82,6 +86,8 @@ tasks {
 
         // Include only necessary dependencies
         dependencies {
+            include(dependency("org.bstats:bstats-bukkit"))
+            include(dependency("org.bstats:bstats-base"))
             include(dependency("org.xerial:sqlite-jdbc"))
             include(dependency("com.mysql:mysql-connector-j"))
             include(dependency("org.apache.commons:commons-lang3"))

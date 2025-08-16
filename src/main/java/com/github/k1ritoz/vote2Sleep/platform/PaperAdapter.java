@@ -63,7 +63,7 @@ public class PaperAdapter implements PlatformAdapter {
 
     @Override
     public boolean isAsyncSafe() {
-        return true;
+        return true; // Bukkit/Spigot/Paper/Purpur is generally safe for async tasks
     }
 
     private int getMinecraftVersion() {

@@ -27,6 +27,5 @@ public interface PlatformAdapter {
     // Get server TPS (if available)
     double[] getTPS();
 
-    // Check if async operations are safe
     boolean isAsyncSafe();
 }
