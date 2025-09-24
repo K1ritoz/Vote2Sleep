@@ -2,6 +2,9 @@
 # Use & para códigos de cor
 # Placeholders disponíveis: {player}, {world}, {current}, {required}, {remaining}, {seconds}, {admin}
 
+# Versão das mensagens - Gerenciada automaticamente, NÃO MODIFICAR
+message-version: 2
+
 # ===================================
 # MENSAGENS GERAIS
 # ===================================
@@ -21,7 +24,8 @@ vote-timeout: "&cA votação para dormir expirou! Todos os votos foram limpos."
 
 # Mensagens de pular
 skip-countdown: "&eA noite será pulada em &a{seconds} &esegundos..."
-night-skipped: "&aA noite foi pulada! Bom dia, flor do dia! &f✨"
+storm-skip-countdown: "&eA tempestade será limpa em &a{seconds} &esegundos..."
+night-skipped: "&aA noite foi pulada! Bom dia, raio de sol! &f✨"
 storm-skipped: "&aA tempestade foi limpa! O sol está brilhando novamente! &e☀"
 force-skip-by-admin: "&e{admin} &aforçou a noite a ser pulada!"
 
@@ -37,6 +41,10 @@ world-disabled-notice: "&cVote2Sleep está desativado neste mundo."
 votes-cancelled-by-admin: "&c{admin} &ecancelou todos os votos para dormir!"
 weather-cleared-votes-cancelled: "&eO tempo clareou! Os votos para dormir foram cancelados."
 
+# Mensagens de efeitos
+lightning-disabled: "&eEfeitos de raio foram desabilitados por questões de conquistas."
+effects-disabled: "&eEfeitos visuais foram desabilitados na configuração."
+
 # ===================================
 # MENSAGENS DE EXIBIÇÃO
 # ===================================
@@ -45,10 +53,23 @@ boss-bar-title: "Votação de Sono: {current}/{required}"
 
 # Títulos
 skip-title: "&a&lNoite Pulada!"
-skip-subtitle: "&eBom dia, flor do dia! &f✨"
+skip-subtitle: "&eBom dia, raio de sol! &f✨"
+storm-skip-title: "&a&lTempestade Limpa!"
+storm-skip-subtitle: "&eO sol está brilhando novamente! &e☀"
 
 # Action bar
 vote-cast-actionbar: "&a{player} &7votou para dormir! &8(&a{current}&7/&a{required}&8)"
+
+# ===================================
+# MENSAGENS DE ANIMAÇÃO DO AMANHECER
+# ===================================
+dawn-animation-title: "O tempo está fluindo..."
+dawn-animation-progress: "O amanhecer se aproxima... {progress}%"
+dawn-animation-start-title: "&e&lO Tempo Flui"
+dawn-animation-start-subtitle: "&7A noite desaparece..."
+dawn-animation-complete-title: "&a&lBom Dia!"
+dawn-animation-complete-subtitle: "&eO sol nasce! &f✨"
+dawn-animation-complete: "&eO amanhecer surge enquanto o tempo flui! Bom dia a todos! &f✨"
 
 # ===================================
 # AJUDA DE COMANDOS
@@ -112,3 +133,11 @@ stats:
 # {count} - Contagem numérica
 # {tps} - TPS do servidor
 # {skips} - Número de pulos
+
+# ===================================
+# NOTAS DE ATUALIZAÇÃO
+# ===================================
+# - A message-version é gerenciada automaticamente pelo plugin
+# - Quando o plugin for atualizado, novas mensagens serão adicionadas automaticamente
+# - Suas mensagens personalizadas existentes serão preservadas durante as atualizações
+# - Um backup das suas mensagens antigas será criado durante as atualizações

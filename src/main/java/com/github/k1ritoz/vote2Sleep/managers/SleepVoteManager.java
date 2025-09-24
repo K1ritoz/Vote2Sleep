@@ -139,7 +139,11 @@ public class SleepVoteManager {
 
         // Send countdown message using global scheduler
         plugin.getPlatformAdapter().runTaskLater(() -> {
-            plugin.getMessageManager().sendWorldMessage(world, "skip-countdown",
+            boolean night = isNight(world);
+
+                        String skipKey = night ? "skip-countdown" : "storm-skip-countdown";
+
+            plugin.getMessageManager().sendWorldMessage(world, skipKey,
                     Map.of("seconds", String.valueOf(plugin.getConfigManager().getSkipDelaySeconds())));
         }, 1L);
     }
@@ -157,6 +161,9 @@ public class SleepVoteManager {
         voteTimeoutTasks.put(world.getUID(), task);
     }
 
+    /**
+     * Executes night skip with optional dawn animation
+     */
     private void executeNightSkip(World world) {
         WorldData worldData = worldDataMap.get(world.getUID());
         if (worldData == null) return;
@@ -171,12 +178,41 @@ public class SleepVoteManager {
             return;
         }
 
-        // Perform skip actions (this needs to be on global thread for Folia)
-        performSkipActions(world, votes);
+        // Check if we should start dawn animation (only for night skip)
+        boolean isNightTime = isNight(world);
+        boolean shouldAnimate = plugin.getConfigManager().isDawnAnimationEnabled() &&
+                isNightTime &&
+                plugin.getConfigManager().isNightSkipAllowed();
 
-        // Fire post-skip event
-        NightSkipEvent skipEvent = new NightSkipEvent(world, votes);
-        Bukkit.getPluginManager().callEvent(skipEvent);
+        if (shouldAnimate) {
+            if (plugin.getConfigManager().isDebugMode()) {
+                plugin.getLogger().info("Starting dawn animation for night skip in world: " + world.getName());
+            }
+
+            // Start dawn animation
+            plugin.getDawnAnimationManager().startDawnAnimation(world);
+
+            // Delay the actual skip actions to let animation handle time progression
+            plugin.getPlatformAdapter().runTaskLater(() -> {
+                performSkipActions(world, votes, false); // false = don't set time, animation handles it
+
+                // Fire post-skip event after animation delay
+                NightSkipEvent skipEvent = new NightSkipEvent(world, votes);
+                Bukkit.getPluginManager().callEvent(skipEvent);
+            }, plugin.getConfigManager().getDawnAnimationDuration() * 20L);
+
+        } else {
+            if (plugin.getConfigManager().isDebugMode()) {
+                plugin.getLogger().info("Performing immediate skip actions (no animation) for world: " + world.getName());
+            }
+
+            // Immediately perform skip actions if animation is disabled or it's storm skip
+            performSkipActions(world, votes, true); // true = set time normally
+
+            // Fire post-skip event immediately
+            NightSkipEvent skipEvent = new NightSkipEvent(world, votes);
+            Bukkit.getPluginManager().callEvent(skipEvent);
+        }
 
         // Clear votes and update displays
         clearVotes(world);
@@ -187,32 +223,49 @@ public class SleepVoteManager {
         }
     }
 
-    private void performSkipActions(World world, List<SleepVote> votes) {
+    /**
+     * Performs the actual skip actions (world operations, player effects, messages)
+     */
+    private void performSkipActions(World world, List<SleepVote> votes, boolean shouldSetTime) {
+        boolean wasNight = isNight(world);
         // WORLD OPERATIONS - For Folia, setTime() and weather must use GLOBAL scheduler
         plugin.getPlatformAdapter().runTaskLaterForWorld(world, (w) -> {
             try {
-                // Use Purpur optimizations if available
-                if (plugin.getPlatformAdapter() instanceof PurpurAdapter) {
-                    PurpurAdapter purpurAdapter = (PurpurAdapter) plugin.getPlatformAdapter();
+                // Only set time if not handled by animation
+                if (shouldSetTime) {
+                    // Use Purpur optimizations if available
+                    if (plugin.getPlatformAdapter() instanceof PurpurAdapter) {
+                        PurpurAdapter purpurAdapter = (PurpurAdapter) plugin.getPlatformAdapter();
 
-                    // Skip time with Purpur optimization
-                    if (isNight(w) && plugin.getConfigManager().isNightSkipAllowed()) {
-                        purpurAdapter.setWorldTimeOptimized(w, 1000);
-                    }
+                        // Skip time with Purpur optimization
+                        if (isNight(w) && plugin.getConfigManager().isNightSkipAllowed()) {
+                            purpurAdapter.setWorldTimeOptimized(w, 1000);
+                        }
 
-                    // Clear weather with Purpur optimization
-                    if (plugin.getConfigManager().shouldClearWeather()) {
-                        purpurAdapter.clearWeatherOptimized(w);
+                        // Clear weather with Purpur optimization
+                        if (plugin.getConfigManager().shouldClearWeather()) {
+                            purpurAdapter.clearWeatherOptimized(w);
+                        }
+                    } else {
+                        // Standard operations - in Folia these operations run on global thread
+                        if (isNight(w) && plugin.getConfigManager().isNightSkipAllowed()) {
+                            w.setTime(1000);
+                        }
+
+                        if (plugin.getConfigManager().shouldClearWeather()) {
+                            w.setStorm(false);
+                            w.setThundering(false);
+                        }
                     }
                 } else {
-                    // Standard operations - in Folia these operations run on global thread
-                    if (isNight(w) && plugin.getConfigManager().isNightSkipAllowed()) {
-                        w.setTime(1000);
-                    }
-
+                    // Animation handled time, but we still need to clear weather if needed
                     if (plugin.getConfigManager().shouldClearWeather()) {
-                        w.setStorm(false);
-                        w.setThundering(false);
+                        if (plugin.getPlatformAdapter() instanceof PurpurAdapter) {
+                            ((PurpurAdapter) plugin.getPlatformAdapter()).clearWeatherOptimized(w);
+                        } else {
+                            w.setStorm(false);
+                            w.setThundering(false);
+                        }
                     }
                 }
 
@@ -260,37 +313,45 @@ public class SleepVoteManager {
             }
         }
 
-        // MESSAGES - use global scheduler
-        plugin.getPlatformAdapter().runTaskLater(() -> {
-            try {
-                plugin.getMessageManager().sendWorldMessage(world, "night-skipped");
-            } catch (Exception e) {
-                plugin.getLogger().warning("Error sending skip messages: " + e.getMessage());
-                e.printStackTrace();
-            }
-        }, 3L);
-
-        // EFFECTS - for effects that need specific coordinates, use region
-        if (plugin.getPlatformAdapter() instanceof FoliaAdapter) {
-            FoliaAdapter foliaAdapter = (FoliaAdapter) plugin.getPlatformAdapter();
-            foliaAdapter.runRegionSpecificEffects(world, (w) -> {
-                try {
-                    plugin.getEffectsManager().playSkipEffects(w, votes);
-                } catch (Exception e) {
-                    plugin.getLogger().warning("Error playing skip effects: " + e.getMessage());
-                    e.printStackTrace();
-                }
-            }, 4L);
-        } else {
-            // For other platforms, use normal scheduler
+        // MESSAGES - use global scheduler (only if animation is disabled or it's storm skip)
+        if (shouldSetTime) {
             plugin.getPlatformAdapter().runTaskLater(() -> {
                 try {
-                    plugin.getEffectsManager().playSkipEffects(world, votes);
+                    if (wasNight) {
+                        plugin.getMessageManager().sendWorldMessage(world, "night-skipped");
+                    } else {
+                        plugin.getMessageManager().sendWorldMessage(world, "storm-skipped");
+                    }
                 } catch (Exception e) {
-                    plugin.getLogger().warning("Error playing skip effects: " + e.getMessage());
+                    plugin.getLogger().warning("Error sending skip messages: " + e.getMessage());
                     e.printStackTrace();
                 }
-            }, 4L);
+            }, 3L);
+        }
+
+        // EFFECTS - for effects that need specific coordinates, use region (only if animation is disabled)
+        if (shouldSetTime) {
+            if (plugin.getPlatformAdapter() instanceof FoliaAdapter) {
+                FoliaAdapter foliaAdapter = (FoliaAdapter) plugin.getPlatformAdapter();
+                foliaAdapter.runRegionSpecificEffects(world, (w) -> {
+                    try {
+                        plugin.getEffectsManager().playSkipEffects(w, votes, wasNight);
+                    } catch (Exception e) {
+                        plugin.getLogger().warning("Error playing skip effects: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }, 4L);
+            } else {
+                // For other platforms, use normal scheduler
+                plugin.getPlatformAdapter().runTaskLater(() -> {
+                    try {
+                        plugin.getEffectsManager().playSkipEffects(world, votes, wasNight);
+                    } catch (Exception e) {
+                        plugin.getLogger().warning("Error playing skip effects: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }, 4L);
+            }
         }
     }
 
@@ -352,28 +413,23 @@ public class SleepVoteManager {
             BossBar bar = Bukkit.createBossBar("",
                     BarColor.valueOf(plugin.getConfigManager().getBossBarColor()),
                     BarStyle.valueOf(plugin.getConfigManager().getBossBarStyle()));
-
-            // Add all world players
-            for (Player player : world.getPlayers()) {
-                bar.addPlayer(player);
-            }
-
             return bar;
         });
 
         WorldData worldData = worldDataMap.get(world.getUID());
+
         if (worldData == null || worldData.getVotes().isEmpty()) {
             bossBar.setVisible(false);
-            return;
+
+        } else {
+            int currentVotes = worldData.getVotes().size();
+            int requiredVotes = getRequiredVotes(world);
+
+            String title = plugin.getMessageManager().getBossBarTitle(currentVotes, requiredVotes);
+            bossBar.setTitle(title);
+            bossBar.setProgress(Math.min((double) currentVotes / requiredVotes, 1.0));
+            bossBar.setVisible(true);
         }
-
-        int currentVotes = worldData.getVotes().size();
-        int requiredVotes = getRequiredVotes(world);
-
-        String title = plugin.getMessageManager().getBossBarTitle(currentVotes, requiredVotes);
-        bossBar.setTitle(title);
-        bossBar.setProgress(Math.min((double) currentVotes / requiredVotes, 1.0));
-        bossBar.setVisible(true);
 
         // Ensure all current world players are added to the boss bar
         for (Player player : world.getPlayers()) {
@@ -440,25 +496,6 @@ public class SleepVoteManager {
         }
     }
 
-    public void shutdown() {
-        // Cancel all tasks
-        skipTasks.values().forEach(task -> {
-            if (!task.isCancelled()) task.cancel();
-        });
-        voteTimeoutTasks.values().forEach(task -> {
-            if (!task.isCancelled()) task.cancel();
-        });
-
-        // Remove all boss bars
-        worldBossBars.values().forEach(BossBar::removeAll);
-
-        // Clear data
-        worldDataMap.clear();
-        worldBossBars.clear();
-        skipTasks.clear();
-        voteTimeoutTasks.clear();
-    }
-
     // Public getters for API
     public WorldData getWorldData(World world) {
         return worldDataMap.get(world.getUID());
@@ -505,7 +542,7 @@ public class SleepVoteManager {
         ));
 
         // Perform skip actions
-        performSkipActions(world, fakeVotes);
+        performSkipActions(world, fakeVotes, true);
 
         // Send force skip message
         plugin.getMessageManager().sendWorldMessage(world, "force-skip-by-admin",
@@ -515,9 +552,14 @@ public class SleepVoteManager {
     // Event handlers for player connections and world changes
     public void handlePlayerJoin(Player player) {
         World world = player.getWorld();
-        // Add player to existing boss bars in their world with delay
+
         plugin.getPlatformAdapter().runTaskLater(() -> {
+            updateBossBar(world);
             addPlayerToBossBar(world, player);
+
+            if (plugin.getDawnAnimationManager() != null) {
+                plugin.getDawnAnimationManager().handlePlayerJoin(player);
+            }
         }, 20L);
     }
 
@@ -525,6 +567,11 @@ public class SleepVoteManager {
         // Remove their vote if they had one
         if (hasPlayerVoted(player)) {
             removeSleepVote(player);
+        }
+
+        // Handle dawn animation player quit
+        if (plugin.getDawnAnimationManager() != null) {
+            plugin.getDawnAnimationManager().handlePlayerQuit(player);
         }
     }
 
@@ -551,5 +598,24 @@ public class SleepVoteManager {
         if (bossBar != null && !bossBar.getPlayers().contains(player)) {
             bossBar.addPlayer(player);
         }
+    }
+
+    public void shutdown() {
+        // Cancel all tasks
+        skipTasks.values().forEach(task -> {
+            if (!task.isCancelled()) task.cancel();
+        });
+        voteTimeoutTasks.values().forEach(task -> {
+            if (!task.isCancelled()) task.cancel();
+        });
+
+        // Remove all boss bars
+        worldBossBars.values().forEach(BossBar::removeAll);
+
+        // Clear data
+        worldDataMap.clear();
+        worldBossBars.clear();
+        skipTasks.clear();
+        voteTimeoutTasks.clear();
     }
 }

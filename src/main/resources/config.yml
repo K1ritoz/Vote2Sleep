@@ -1,6 +1,9 @@
 # Vote2Sleep Configuration
 # A modern sleep voting plugin for Minecraft servers
 
+# Configuration version - Automatically managed, DO NOT MODIFY
+config-version: 2
+
 # ===================================
 # GENERAL SETTINGS
 # ===================================
@@ -70,6 +73,59 @@ display:
     enabled: true
 
 # ===================================
+# EFFECTS SETTINGS
+# ===================================
+effects:
+  # Lightning effects when night is skipped
+  # WARNING: Enabling this may give players the "Surge Protector" achievement
+  # Set to false to prevent this achievement from being triggered
+  # NOTE: If the dawn effect is enabled, lightning-on-skip will not occur.
+  lightning-on-skip: false
+
+  # Chance of lightning effect per player (0.0 = 0%, 1.0 = 100%)
+  # Only used if lightning-on-skip is true
+  lightning-chance: 0.3
+
+  # Enable particle effects (like happy villager, end rod particles)
+  particle-effects: true
+
+# ===================================
+# ANIMATION SETTINGS
+# ===================================
+animation:
+  # Dawn animation when sleep voting succeeds
+  dawn:
+    # Enable dawn animation effect (only for night skip, not storm skip)
+    # When enabled, the dawn animation occurs and overrides the lightning-on-skip effect
+    enabled: false
+
+    # Total duration of the animation in seconds (1-30)
+    duration-seconds: 3
+
+    # Number of animation steps (8-256) (more steps = smoother animation, but the animation time will increase.)
+    animation-steps: 32
+
+    # Title messages during animation
+    title:
+      enabled: true
+
+    # Boss bar during animation
+    boss-bar:
+      enabled: true
+      color: "YELLOW"  # PINK, BLUE, RED, GREEN, YELLOW, PURPLE, WHITE
+      style: "SOLID"   # SOLID, SEGMENTED_6, SEGMENTED_10, SEGMENTED_12, SEGMENTED_20
+
+    # Particle effects during animation
+    particles:
+      enabled: true
+      type: "ENCHANT"  # ENCHANT, END_ROD, FIREWORK, HAPPY_VILLAGER, etc.
+
+    # Sound effects during animation
+    sounds:
+      animation-sound: "BLOCK_AMETHYST_BLOCK_CHIME"
+      final-sound: "ENTITY_EXPERIENCE_ORB_PICKUP"
+
+# ===================================
 # ADVANCED SETTINGS
 # ===================================
 advanced:
@@ -110,3 +166,13 @@ advanced:
 # ===================================
 # World-specific settings are stored in worlds.yml
 # Use /v2s enable and /v2s disable commands to manage worlds
+
+# ===================================
+# AUTO-UPDATE SYSTEM
+# ===================================
+# This configuration file uses an automatic update system:
+# - When you update the plugin, new settings will be added automatically
+# - Your existing settings will always be preserved
+# - The config-version helps track what features are available
+# - A backup is created only when updates are actually needed
+# - Comments and structure are maintained during updates

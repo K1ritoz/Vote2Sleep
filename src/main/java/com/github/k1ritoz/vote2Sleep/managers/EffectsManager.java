@@ -21,8 +21,8 @@ public class EffectsManager {
             playSound(world, plugin.getConfigManager().getVoteSound());
         }
 
-        // Particle effect around voter
-        if (voter.isOnline()) {
+        // Particle effect around voter (only if particle effects are enabled)
+        if (plugin.getConfigManager().areParticleEffectsEnabled() && voter.isOnline()) {
             Location loc = voter.getLocation();
             world.spawnParticle(Particle.HAPPY_VILLAGER, loc.add(0, 1, 0), 10, 0.5, 0.5, 0.5, 0.1);
         }
@@ -36,35 +36,57 @@ public class EffectsManager {
         }
     }
 
-    public void playSkipEffects(World world, List<SleepVote> votes) {
+    public void playSkipEffects(World world, List<SleepVote> votes, boolean wasNight) {
         // Sound effect
         if (plugin.getConfigManager().areSoundsEnabled()) {
             playSound(world, plugin.getConfigManager().getSkipSound());
         }
 
-        // Title effect
+        // Title effect (only if title are enabled)
         if (plugin.getConfigManager().areTitlesEnabled()) {
-            String title = plugin.getMessageManager().getMessage("skip-title");
-            String subtitle = plugin.getMessageManager().getMessage("skip-subtitle");
+            int fadeIn = plugin.getConfigManager().getTitleFadeIn();
+            int stay = plugin.getConfigManager().getTitleStay();
+            int fadeOut = plugin.getConfigManager().getTitleFadeOut();
+
+            String title = wasNight ? plugin.getMessageManager().getMessage("skip-title")
+                    : plugin.getMessageManager().getMessage("storm-skip-title");
+            String subtitle = wasNight ? plugin.getMessageManager().getMessage("skip-subtitle")
+                    : plugin.getMessageManager().getMessage("storm-skip-subtitle");
 
             for (Player player : world.getPlayers()) {
-                player.sendTitle(title, subtitle, 10, 70, 20);
+                player.sendTitle(title, subtitle, fadeIn, stay, fadeOut);
             }
         }
 
-        // Particle effects at voting locations
-        for (SleepVote vote : votes) {
-            Location loc = vote.getLocation();
-            if (loc.getWorld().equals(world)) {
-                world.spawnParticle(Particle.END_ROD, loc.add(0, 2, 0), 20, 1, 1, 1, 0.1);
+
+        // Particle effects at voting locations (only if particle effects are enabled)
+        if (plugin.getConfigManager().areParticleEffectsEnabled()) {
+            for (SleepVote vote : votes) {
+                Location loc = vote.getLocation();
+                if (loc.getWorld().equals(world)) {
+                    world.spawnParticle(Particle.END_ROD, loc.add(0, 2, 0), 20, 1, 1, 1, 0.1);
+                }
             }
         }
 
         // Lightning effect (visual only)
-        for (Player player : world.getPlayers()) {
-            if (Math.random() < 0.3) { // 30% chance per player
-                Location loc = player.getLocation();
-                world.strikeLightningEffect(loc);
+        if (plugin.getConfigManager().isLightningOnSkipEnabled()) {
+            double lightningChance = plugin.getConfigManager().getLightningChance();
+
+            for (Player player : world.getPlayers()) {
+                if (Math.random() < lightningChance) {
+                    Location loc = player.getLocation();
+                    world.strikeLightningEffect(loc);
+
+                    if (plugin.getConfigManager().isDebugMode()) {
+                        plugin.getLogger().info("Lightning effect triggered for player " + player.getName() + " at " + loc);
+                    }
+                }
+            }
+        } else {
+            // Optional: Send message explaining why lightning is disabled
+            if (plugin.getConfigManager().isDebugMode()) {
+                plugin.getLogger().info("Lightning effects are disabled to prevent 'Surge Protector' achievement");
             }
         }
     }

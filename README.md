@@ -1,4 +1,7 @@
 # Vote2Sleep
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3.0-blue.svg)](LICENSE)
+[![Minecraft](https://img.shields.io/badge/Minecraft-1.21.4+-orange.svg)](https://minecraft.net)
+[![Crowdin](https://badges.crowdin.net/vote2sleep/localized.svg)](https://crowdin.com/project/vote2sleep)
 
 A modern, feature-rich sleep voting plugin for Minecraft servers that allows players to collectively vote to skip night and storms.
 
@@ -34,7 +37,7 @@ A modern, feature-rich sleep voting plugin for Minecraft servers that allows pla
 - **Real-time Updates**: Boss bars, action bars, and titles show voting progress
 
 ### Platform Support
-- **Multi-Platform**: Supports Bukkit, Spigot, Paper, and Folia
+- **Multi-Platform**: Supports Bukkit, Spigot, Paper, Purpur and Folia
 - **Version Compatibility**: Minecraft 1.21.4+
 - **Cross-Platform Scheduling**: Optimized for both traditional and regionized servers
 
@@ -330,19 +333,6 @@ When reporting bugs, please include:
 - Relevant configuration files
 - Console errors or logs
 - Steps to reproduce the issue
-
-## 📝 Changelog
-
-### Version 1.0.0
-- Initial release
-- Multi-platform support (Bukkit, Spigot, Paper, Folia)
-- Configurable sleep voting system
-- Storm and night skipping
-- Boss bar and visual effects
-- Database integration
-- PlaceholderAPI support
-- Comprehensive API for developers
-- Update checker with GitHub releases
 
 ## 📄 License
 

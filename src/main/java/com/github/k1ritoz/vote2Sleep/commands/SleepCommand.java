@@ -217,6 +217,11 @@ public class SleepCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("This command can only be used by players!");
+            return true;
+        }
+
         plugin.getConfigManager().reload();
         plugin.getMessageManager().reload();
 

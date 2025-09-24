@@ -2,6 +2,9 @@
 # Use & for color codes
 # Available placeholders: {player}, {world}, {current}, {required}, {remaining}, {seconds}, {admin}
 
+# Message version - Automatically managed, DO NOT MODIFY
+message-version: 2
+
 # ===================================
 # GENERAL MESSAGES
 # ===================================
@@ -21,6 +24,7 @@ vote-timeout: "&cSleep vote has timed out! All votes have been cleared."
 
 # Skip messages
 skip-countdown: "&eNight will be skipped in &a{seconds} &eseconds..."
+storm-skip-countdown: "&eStorm will be cleared in &a{seconds} &eseconds..."
 night-skipped: "&aThe night has been skipped! Good morning, sunshine! &f✨"
 storm-skipped: "&aThe storm has been cleared! The sun is shining again! &e☀"
 force-skip-by-admin: "&e{admin} &ahas forced the night to be skipped!"
@@ -37,6 +41,10 @@ world-disabled-notice: "&cVote2Sleep is disabled in this world."
 votes-cancelled-by-admin: "&c{admin} &ehas cancelled all sleep votes!"
 weather-cleared-votes-cancelled: "&eWeather has cleared! Sleep votes have been cancelled."
 
+# Effect messages
+lightning-disabled: "&eLightning effects have been disabled for achievement reasons."
+effects-disabled: "&eVisual effects have been disabled in configuration."
+
 # ===================================
 # DISPLAY MESSAGES
 # ===================================
@@ -46,9 +54,22 @@ boss-bar-title: "Sleep Vote: {current}/{required}"
 # Titles
 skip-title: "&a&lNight Skipped!"
 skip-subtitle: "&eGood morning, sunshine! &f✨"
+storm-skip-title: "&a&lStorm Cleared!"
+storm-skip-subtitle: "&eThe sun is shining again! &e☀"
 
 # Action bar
 vote-cast-actionbar: "&a{player} &7voted for sleep! &8(&a{current}&7/&a{required}&8)"
+
+# ===================================
+# DAWN ANIMATION MESSAGES
+# ===================================
+dawn-animation-title: "Time is flowing..."
+dawn-animation-progress: "Dawn approaches... {progress}%"
+dawn-animation-start-title: "&e&lTime Flows"
+dawn-animation-start-subtitle: "&7The night fades away..."
+dawn-animation-complete-title: "&a&lGood Morning!"
+dawn-animation-complete-subtitle: "&eThe sun rises! &f✨"
+dawn-animation-complete: "&eThe dawn breaks as time flows forward! Good morning, everyone! &f✨"
 
 # ===================================
 # COMMAND HELP
@@ -112,3 +133,11 @@ stats:
 # {count} - Number count
 # {tps} - Server TPS
 # {skips} - Number of skips
+
+# ===================================
+# UPDATE NOTES
+# ===================================
+# - The message-version is automatically managed by the plugin
+# - When the plugin updates, new messages will be added automatically
+# - Your existing custom messages will be preserved during updates
+# - A backup of your old messages will be created during updates

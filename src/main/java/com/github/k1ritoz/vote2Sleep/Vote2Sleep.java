@@ -22,6 +22,7 @@ public final class Vote2Sleep extends JavaPlugin {
     private EffectsManager effectsManager;
     private DatabaseManager databaseManager;
     private HooksManager hooksManager;
+    private DawnAnimationManager dawnAnimationManager;
     private Vote2SleepAPI api;
 
     @Override
@@ -126,6 +127,10 @@ public final class Vote2Sleep extends JavaPlugin {
                 voteManager.shutdown();
             }
 
+            if (dawnAnimationManager != null) {
+                dawnAnimationManager.cleanup();
+            }
+
             if (hooksManager != null) {
                 hooksManager.cleanup();
             }
@@ -169,6 +174,10 @@ public final class Vote2Sleep extends JavaPlugin {
             // Initialize effects manager
             this.effectsManager = new EffectsManager(this);
             getLogger().info("Effects manager initialized");
+
+            // Initialize dawn animation manager
+            this.dawnAnimationManager = new DawnAnimationManager(this);
+            getLogger().info("Dawn animation manager initialized");
 
             // Initialize vote manager
             this.voteManager = new SleepVoteManager(this);
@@ -286,6 +295,10 @@ public final class Vote2Sleep extends JavaPlugin {
         return hooksManager;
     }
 
+    public DawnAnimationManager getDawnAnimationManager() {
+        return dawnAnimationManager;
+    }
+
     public Vote2SleepAPI getApi() {
         return api;
     }
@@ -299,6 +312,7 @@ public final class Vote2Sleep extends JavaPlugin {
                 voteManager != null &&
                 effectsManager != null &&
                 databaseManager != null &&
-                hooksManager != null;
+                hooksManager != null &&
+                dawnAnimationManager != null;
     }
 }
