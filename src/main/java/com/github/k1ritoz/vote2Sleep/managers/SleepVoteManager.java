@@ -42,6 +42,12 @@ public class SleepVoteManager {
             return;
         }
 
+        // Check if dawn animation is active
+        if (plugin.getDawnAnimationManager().isAnimating(world)) {
+            plugin.getMessageManager().sendMessage(player, "dawn-animation-active");
+            return;
+        }
+
         // Check if player is exempt
         if (isPlayerExempt(player)) {
             plugin.getMessageManager().sendMessage(player, "player-exempt");
@@ -99,6 +105,12 @@ public class SleepVoteManager {
         WorldData worldData = worldDataMap.get(world.getUID());
 
         if (worldData == null || !worldData.hasPlayerVoted(player.getUniqueId())) {
+            return;
+        }
+
+        // Don't allow vote removal during dawn animation
+        if (plugin.getDawnAnimationManager().isAnimating(world)) {
+            plugin.getMessageManager().sendMessage(player, "dawn-animation-active");
             return;
         }
 
@@ -407,35 +419,199 @@ public class SleepVoteManager {
     }
 
     private void updateBossBar(World world) {
-        if (!plugin.getConfigManager().isBossBarEnabled()) return;
+        if (!plugin.getConfigManager().isBossBarEnabled()) {
+            // If BossBar was disabled during reload, remove the existing one
+            BossBar existingBar = worldBossBars.remove(world.getUID());
+            if (existingBar != null) {
+                try {
+                    existingBar.removeAll();
+                } catch (Exception e) {
+                    if (plugin.getConfigManager().isDebugMode()) {
+                        plugin.getLogger().warning("Error removing disabled BossBar: " + e.getMessage());
+                    }
+                }
+            }
+            return;
+        }
 
-        BossBar bossBar = worldBossBars.computeIfAbsent(world.getUID(), k -> {
-            BossBar bar = Bukkit.createBossBar("",
-                    BarColor.valueOf(plugin.getConfigManager().getBossBarColor()),
-                    BarStyle.valueOf(plugin.getConfigManager().getBossBarStyle()));
-            return bar;
-        });
+        BossBar bossBar = worldBossBars.get(world.getUID());
+
+        // Determine if we need to recreate the BossBar
+        boolean needsRecreation = false;
+
+        if (bossBar == null) {
+            needsRecreation = true;
+        } else {
+            // Check if configuration has changed
+            try {
+                BarColor currentColor = bossBar.getColor();
+                BarStyle currentStyle = bossBar.getStyle();
+
+                BarColor configColor = BarColor.valueOf(plugin.getConfigManager().getBossBarColor());
+                BarStyle configStyle = BarStyle.valueOf(plugin.getConfigManager().getBossBarStyle());
+
+                // If color or style differ, mark for recreation
+                if (currentColor != configColor || currentStyle != configStyle) {
+                    needsRecreation = true;
+                    if (plugin.getConfigManager().isDebugMode()) {
+                        plugin.getLogger().info("BossBar settings changed after reload, recreating for world " + world.getName());
+                    }
+                }
+
+                // Validate existing BossBar by accessing its properties
+                bossBar.getTitle();
+                bossBar.getProgress();
+                bossBar.isVisible();
+
+            } catch (IllegalArgumentException e) {
+                // Invalid configuration values
+                if (plugin.getConfigManager().isDebugMode()) {
+                    plugin.getLogger().warning("Invalid BossBar configuration detected, using defaults: " + e.getMessage());
+                }
+                needsRecreation = true;
+            } catch (Exception e) {
+                // Corrupted BossBar instance
+                if (plugin.getConfigManager().isDebugMode()) {
+                    plugin.getLogger().warning("BossBar corrupted for world " + world.getName() + ", recreating: " + e.getMessage());
+                }
+                needsRecreation = true;
+            }
+        }
+
+        if (needsRecreation) {
+            // Safely remove old BossBar if it exists
+            if (bossBar != null) {
+                try {
+                    bossBar.removeAll();
+                } catch (Exception ignored) {}
+                worldBossBars.remove(world.getUID());
+            }
+
+            try {
+                // Create new BossBar with validated config
+                BarColor barColor;
+                BarStyle barStyle;
+
+                try {
+                    barColor = BarColor.valueOf(plugin.getConfigManager().getBossBarColor());
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Invalid boss bar color, using default BLUE");
+                    barColor = BarColor.BLUE;
+                }
+
+                try {
+                    barStyle = BarStyle.valueOf(plugin.getConfigManager().getBossBarStyle());
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Invalid boss bar style, using default SOLID");
+                    barStyle = BarStyle.SOLID;
+                }
+
+                bossBar = Bukkit.createBossBar("", barColor, barStyle);
+                worldBossBars.put(world.getUID(), bossBar);
+
+                if (plugin.getConfigManager().isDebugMode()) {
+                    plugin.getLogger().info("Created new BossBar for world " + world.getName());
+                }
+            } catch (Exception e) {
+                plugin.getLogger().severe("Failed to create BossBar for world " + world.getName() + ": " + e.getMessage());
+                return;
+            }
+        }
 
         WorldData worldData = worldDataMap.get(world.getUID());
 
         if (worldData == null || worldData.getVotes().isEmpty()) {
-            bossBar.setVisible(false);
-
+            // Hide BossBar if no votes
+            try {
+                bossBar.setVisible(false);
+                bossBar.removeAll();
+            } catch (Exception e) {
+                if (plugin.getConfigManager().isDebugMode()) {
+                    plugin.getLogger().warning("Error hiding BossBar: " + e.getMessage());
+                }
+            }
         } else {
             int currentVotes = worldData.getVotes().size();
             int requiredVotes = getRequiredVotes(world);
 
-            String title = plugin.getMessageManager().getBossBarTitle(currentVotes, requiredVotes);
-            bossBar.setTitle(title);
-            bossBar.setProgress(Math.min((double) currentVotes / requiredVotes, 1.0));
-            bossBar.setVisible(true);
+            try {
+                String title = plugin.getMessageManager().getBossBarTitle(currentVotes, requiredVotes);
+                bossBar.setTitle(title);
+                bossBar.setProgress(Math.min((double) currentVotes / requiredVotes, 1.0));
+                bossBar.setVisible(true);
+
+                // Synchronize players in BossBar with world players
+                Set<Player> bossBarPlayers = new HashSet<>(bossBar.getPlayers());
+                Set<Player> worldPlayers = new HashSet<>(world.getPlayers());
+
+                // Add missing players
+                for (Player player : worldPlayers) {
+                    if (!bossBarPlayers.contains(player)) {
+                        try {
+                            bossBar.addPlayer(player);
+                            if (plugin.getConfigManager().isDebugMode()) {
+                                plugin.getLogger().info("Added missing player " + player.getName() + " to BossBar");
+                            }
+                        } catch (Exception e) {
+                            if (plugin.getConfigManager().isDebugMode()) {
+                                plugin.getLogger().warning("Failed to add player " + player.getName() + " to BossBar: " + e.getMessage());
+                            }
+                        }
+                    }
+                }
+
+                // Remove players no longer in the world
+                for (Player player : bossBarPlayers) {
+                    if (!worldPlayers.contains(player)) {
+                        try {
+                            bossBar.removePlayer(player);
+                            if (plugin.getConfigManager().isDebugMode()) {
+                                plugin.getLogger().info("Removed player " + player.getName() + " from BossBar (not in world)");
+                            }
+                        } catch (Exception e) {
+                            if (plugin.getConfigManager().isDebugMode()) {
+                                plugin.getLogger().warning("Failed to remove player " + player.getName() + " from BossBar: " + e.getMessage());
+                            }
+                        }
+                    }
+                }
+
+            } catch (Exception e) {
+                plugin.getLogger().warning("Error updating BossBar for world " + world.getName() + ": " + e.getMessage());
+
+                // On repeated errors, remove corrupted BossBar
+                worldBossBars.remove(world.getUID());
+                try {
+                    bossBar.removeAll();
+                } catch (Exception ignored) {}
+            }
+        }
+    }
+
+    // Specific method to synchronize BossBars after config reload
+    public void synchronizeBossBarSettings() {
+        if (plugin.getConfigManager().isDebugMode()) {
+            plugin.getLogger().info("Synchronizing BossBar settings after configuration reload...");
         }
 
-        // Ensure all current world players are added to the boss bar
-        for (Player player : world.getPlayers()) {
-            if (!bossBar.getPlayers().contains(player)) {
-                bossBar.addPlayer(player);
+        // Update all existing BossBars
+        for (UUID worldUUID : new HashSet<>(worldBossBars.keySet())) {
+            World world = Bukkit.getWorld(worldUUID);
+            if (world != null) {
+                updateBossBar(world);
+            } else {
+                // World no longer exists, remove BossBar
+                BossBar bossBar = worldBossBars.remove(worldUUID);
+                if (bossBar != null) {
+                    try {
+                        bossBar.removeAll();
+                    } catch (Exception ignored) {}
+                }
             }
+        }
+
+        if (plugin.getConfigManager().isDebugMode()) {
+            plugin.getLogger().info("BossBar synchronization completed");
         }
     }
 
@@ -530,6 +706,12 @@ public class SleepVoteManager {
     public void forceSkip(World world, Player initiator) {
         if (!plugin.getConfigManager().isWorldEnabled(world)) {
             plugin.getMessageManager().sendMessage(initiator, "world-not-enabled");
+            return;
+        }
+
+        // Don't allow force skip during dawn animation
+        if (plugin.getDawnAnimationManager().isAnimating(world)) {
+            plugin.getMessageManager().sendMessage(initiator, "dawn-animation-active");
             return;
         }
 

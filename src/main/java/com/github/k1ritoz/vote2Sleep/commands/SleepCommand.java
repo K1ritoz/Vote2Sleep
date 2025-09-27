@@ -225,6 +225,8 @@ public class SleepCommand implements CommandExecutor, TabCompleter {
         plugin.getConfigManager().reload();
         plugin.getMessageManager().reload();
 
+        plugin.getVoteManager().synchronizeBossBarSettings();
+
         plugin.getMessageManager().sendMessage((Player) sender, "reload-success");
         return true;
     }

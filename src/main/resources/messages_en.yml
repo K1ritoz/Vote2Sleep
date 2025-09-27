@@ -3,7 +3,7 @@
 # Available placeholders: {player}, {world}, {current}, {required}, {remaining}, {seconds}, {admin}
 
 # Message version - Automatically managed, DO NOT MODIFY
-message-version: 2
+message-version: 2.1
 
 # ===================================
 # GENERAL MESSAGES
@@ -70,6 +70,7 @@ dawn-animation-start-subtitle: "&7The night fades away..."
 dawn-animation-complete-title: "&a&lGood Morning!"
 dawn-animation-complete-subtitle: "&eThe sun rises! &f✨"
 dawn-animation-complete: "&eThe dawn breaks as time flows forward! Good morning, everyone! &f✨"
+dawn-animation-active: "&eThe vote has already been completed! Wait for the dawn animation to finish."
 
 # ===================================
 # COMMAND HELP

@@ -36,8 +36,8 @@ public class AutoConfigUpdater {
             }
 
             // Get current versions
-            int userConfigVersion = userConfig.getInt("config-version", 1);
-            int defaultConfigVersion = defaultConfig.getInt("config-version", 1);
+            double userConfigVersion = userConfig.getDouble("config-version", 1.0);
+            double defaultConfigVersion = defaultConfig.getDouble("config-version", 1.0);
 
             // Check if update is needed based on version
             if (userConfigVersion >= defaultConfigVersion) {
@@ -54,7 +54,7 @@ public class AutoConfigUpdater {
                 return false;
             }
 
-            plugin.getLogger().info("Updating configuration from version " + userConfigVersion + " to " + defaultConfigVersion);
+            plugin.getLogger().info("Updating configuration from version " + String.format("%.1f", userConfigVersion) + " to " + String.format("%.1f", defaultConfigVersion));
             plugin.getLogger().info("Found " + missingKeys.size() + " new configuration options");
 
             // Backup current config
@@ -100,8 +100,8 @@ public class AutoConfigUpdater {
             }
 
             // Get current versions
-            int userMessageVersion = userMessages.getInt("message-version", 1);
-            int defaultMessageVersion = defaultMessages.getInt("message-version", 1);
+            double userMessageVersion = userMessages.getDouble("message-version", 1.0);
+            double defaultMessageVersion = defaultMessages.getDouble("message-version", 1.0);
 
             // Check if update is needed based on version
             if (userMessageVersion >= defaultMessageVersion) {
@@ -118,7 +118,7 @@ public class AutoConfigUpdater {
                 return false;
             }
 
-            plugin.getLogger().info("Updating " + language + " messages from version " + userMessageVersion + " to " + defaultMessageVersion);
+            plugin.getLogger().info("Updating " + language + " messages from version " + String.format("%.1f", userMessageVersion) + " to " + String.format("%.1f", defaultMessageVersion));
             plugin.getLogger().info("Found " + missingKeys.size() + " new message keys");
 
             // Backup current messages

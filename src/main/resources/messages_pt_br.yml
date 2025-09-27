@@ -3,7 +3,7 @@
 # Placeholders disponíveis: {player}, {world}, {current}, {required}, {remaining}, {seconds}, {admin}
 
 # Versão das mensagens - Gerenciada automaticamente, NÃO MODIFICAR
-message-version: 2
+message-version: 2.1
 
 # ===================================
 # MENSAGENS GERAIS
@@ -70,6 +70,7 @@ dawn-animation-start-subtitle: "&7A noite desaparece..."
 dawn-animation-complete-title: "&a&lBom Dia!"
 dawn-animation-complete-subtitle: "&eO sol nasce! &f✨"
 dawn-animation-complete: "&eO amanhecer surge enquanto o tempo flui! Bom dia a todos! &f✨"
+dawn-animation-active: "&eA votação já foi concluída! Aguarde a animação do amanhecer."
 
 # ===================================
 # AJUDA DE COMANDOS

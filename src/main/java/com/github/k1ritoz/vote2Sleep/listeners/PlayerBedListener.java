@@ -22,6 +22,9 @@ public class PlayerBedListener implements Listener {
 
         Player player = event.getPlayer();
 
+        // Check if bed interaction is enabled in config
+        if (!plugin.getConfigManager().isBedInteractionEnabled()) return;
+
         // For Folia compatibility - schedule task based on detected platform
         try {
             if (plugin.getPlatformAdapter().getPlatformName().equals("Folia")) {

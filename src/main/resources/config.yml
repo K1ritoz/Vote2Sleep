@@ -2,7 +2,7 @@
 # A modern sleep voting plugin for Minecraft servers
 
 # Configuration version - Automatically managed, DO NOT MODIFY
-config-version: 2
+config-version: 2.1
 
 # ===================================
 # GENERAL SETTINGS
@@ -44,6 +44,11 @@ settings:
 
   # Clear weather when night/storm is skipped
   clear-weather: true
+
+  # Allow players to start voting by interacting with beds
+  # If set to false, voting can only be started with commands (/sleep)
+  # If set to true, players can vote both by using beds and commands
+  bed-interaction: true
 
 # ===================================
 # DISPLAY SETTINGS

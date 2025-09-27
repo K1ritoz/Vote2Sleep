@@ -71,6 +71,7 @@ public class ConfigurationManager {
         if (!config.contains("settings.heal-players")) config.set("settings.heal-players", false);
         if (!config.contains("settings.feed-players")) config.set("settings.feed-players", false);
         if (!config.contains("settings.clear-weather")) config.set("settings.clear-weather", true);
+        if (!config.contains("settings.bed-interaction")) config.set("settings.bed-interaction", true);
 
         // Display settings
         if (!config.contains("display.boss-bar.enabled")) config.set("display.boss-bar.enabled", true);
@@ -161,6 +162,7 @@ public class ConfigurationManager {
     public boolean shouldHealPlayers() { return config.getBoolean("settings.heal-players"); }
     public boolean shouldFeedPlayers() { return config.getBoolean("settings.feed-players"); }
     public boolean shouldClearWeather() { return config.getBoolean("settings.clear-weather"); }
+    public boolean isBedInteractionEnabled() { return config.getBoolean("settings.bed-interaction"); }
 
     // Display settings
     public boolean isBossBarEnabled() { return config.getBoolean("display.boss-bar.enabled"); }

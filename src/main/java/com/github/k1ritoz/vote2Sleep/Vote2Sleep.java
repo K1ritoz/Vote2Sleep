@@ -24,6 +24,7 @@ public final class Vote2Sleep extends JavaPlugin {
     private HooksManager hooksManager;
     private DawnAnimationManager dawnAnimationManager;
     private Vote2SleepAPI api;
+    private UpdateChecker updateChecker;
 
     @Override
     public void onLoad() {
@@ -61,8 +62,32 @@ public final class Vote2Sleep extends JavaPlugin {
 
             // Check for updates
             if (configManager.isUpdateCheckEnabled()) {
-                new UpdateChecker(this, "https://api.github.com/repos/k1ritoz/Vote2Sleep/releases/latest")
-                        .checkForUpdates();
+                try {
+                    // Initialize update checker
+                    this.updateChecker = new UpdateChecker(this, "https://api.github.com/repos/k1ritoz/Vote2Sleep/releases/latest");
+
+                    // Verify initialization was successful
+                    if (this.updateChecker != null) {
+                        // Perform initial check and start periodic checking
+                        updateChecker.checkForUpdates();
+                        updateChecker.startPeriodicChecking();
+
+                        if (configManager.isDebugMode()) {
+                            getLogger().info("Update checker initialized with 24h periodic checks");
+                        }
+                    } else {
+                        getLogger().warning("Failed to initialize update checker - instance is null");
+                    }
+                } catch (Exception e) {
+                    getLogger().warning("Failed to initialize update checker: " + e.getMessage());
+                    if (configManager.isDebugMode()) {
+                        e.printStackTrace();
+                    }
+                }
+            } else {
+                if (configManager.isDebugMode()) {
+                    getLogger().info("Update checker disabled in configuration");
+                }
             }
 
             getLogger().info("Vote2Sleep v" + getDescription().getVersion() + " enabled successfully!");
@@ -141,6 +166,10 @@ public final class Vote2Sleep extends JavaPlugin {
 
             if (effectsManager != null) {
                 effectsManager.cleanup();
+            }
+
+            if (updateChecker != null) {
+                updateChecker.stopPeriodicChecking();
             }
 
             getLogger().info("Vote2Sleep disabled successfully!");
