@@ -24,6 +24,7 @@ public class SleepVoteManager {
     private final Map<UUID, BossBar> worldBossBars;
     private final Map<UUID, BukkitTask> skipTasks;
     private final Map<UUID, BukkitTask> voteTimeoutTasks;
+    private final Map<UUID, BukkitTask> nightCheckTasks;
 
     public SleepVoteManager(Vote2Sleep plugin) {
         this.plugin = plugin;
@@ -31,9 +32,33 @@ public class SleepVoteManager {
         this.worldBossBars = new ConcurrentHashMap<>();
         this.skipTasks = new ConcurrentHashMap<>();
         this.voteTimeoutTasks = new ConcurrentHashMap<>();
+        this.nightCheckTasks = new ConcurrentHashMap<>();
     }
 
+    /**
+     * Starts sleep vote from command (/sleep) - allows voting even if bed interaction is disabled
+     */
     public void startSleepVote(Player player) {
+        startSleepVoteInternal(player, true);
+    }
+
+    /**
+     * Starts sleep vote from bed interaction - respects bed-interaction config
+     */
+    public void startSleepVoteFromBed(Player player) {
+        // Check if bed interaction is enabled
+        if (!plugin.getConfigManager().isBedInteractionEnabled()) {
+            plugin.getMessageManager().sendMessage(player, "bed-interaction-disabled");
+            return;
+        }
+
+        startSleepVoteInternal(player, false);
+    }
+
+    /**
+     * Internal method for processing sleep votes
+     */
+    private void startSleepVoteInternal(Player player, boolean skipBedCheck) {
         World world = player.getWorld();
 
         // Check if world is enabled
@@ -97,6 +122,7 @@ public class SleepVoteManager {
             scheduleNightSkip(world);
         } else {
             scheduleVoteTimeout(world);
+            scheduleNightCheckTask(world);
         }
     }
 
@@ -132,10 +158,44 @@ public class SleepVoteManager {
         plugin.getMessageManager().sendMessage(player, "vote-removed");
     }
 
+    /**
+     * Schedules a task to detect when night ends naturally (preventing boss bar stuck bug)
+     */
+    private void scheduleNightCheckTask(World world) {
+        cancelNightCheckTask(world);
+
+        // Check every second if night has ended
+        BukkitTask task = plugin.getPlatformAdapter().runTaskTimerForWorld(world, (w) -> {
+            // If world is no longer enabled, cancel the task
+            if (!plugin.getConfigManager().isWorldEnabled(w)) {
+                cancelNightCheckTask(w);
+                return;
+            }
+
+            WorldData worldData = worldDataMap.get(w.getUID());
+            if (worldData == null || worldData.isEmpty()) {
+                cancelNightCheckTask(w);
+                return;
+            }
+
+            // Check if night has ended naturally
+            if (!canSleep(w)) {
+                // Night/storm has ended naturally, clear all votes and boss bar
+                clearVotes(w);
+                if (plugin.getConfigManager().isDebugMode()) {
+                    plugin.getLogger().info("Natural night/storm end detected in world " + w.getName() + ", clearing votes");
+                }
+            }
+        }, 20L, 20L); // Check every second
+
+        nightCheckTasks.put(world.getUID(), task);
+    }
+
     private void scheduleNightSkip(World world) {
         // Cancel existing tasks
         cancelSkipTask(world);
         cancelVoteTimeoutTask(world);
+        cancelNightCheckTask(world);
 
         int delay = plugin.getConfigManager().getSkipDelaySeconds() * 20;
 
@@ -153,12 +213,13 @@ public class SleepVoteManager {
         plugin.getPlatformAdapter().runTaskLater(() -> {
             boolean night = isNight(world);
 
-                        String skipKey = night ? "skip-countdown" : "storm-skip-countdown";
+            String skipKey = night ? "skip-countdown" : "storm-skip-countdown";
 
             plugin.getMessageManager().sendWorldMessage(world, skipKey,
                     Map.of("seconds", String.valueOf(plugin.getConfigManager().getSkipDelaySeconds())));
         }, 1L);
     }
+
     private void scheduleVoteTimeout(World world) {
         cancelVoteTimeoutTask(world);
 
@@ -166,8 +227,12 @@ public class SleepVoteManager {
 
         // Use global scheduler for world operations
         BukkitTask task = plugin.getPlatformAdapter().runTaskLater(() -> {
-            clearVotes(world);
-            plugin.getMessageManager().sendWorldMessage(world, "vote-timeout");
+            // Check if votes still exist before clearing
+            WorldData worldData = worldDataMap.get(world.getUID());
+            if (worldData != null && !worldData.isEmpty()) {
+                clearVotes(world);
+                plugin.getMessageManager().sendWorldMessage(world, "vote-timeout");
+            }
         }, timeout);
 
         voteTimeoutTasks.put(world.getUID(), task);
@@ -588,7 +653,9 @@ public class SleepVoteManager {
         }
     }
 
-    // Specific method to synchronize BossBars after config reload
+    /**
+     * Specific method to synchronize BossBars after config reload
+     */
     public void synchronizeBossBarSettings() {
         if (plugin.getConfigManager().isDebugMode()) {
             plugin.getLogger().info("Synchronizing BossBar settings after configuration reload...");
@@ -656,6 +723,7 @@ public class SleepVoteManager {
         updateBossBar(world);
         cancelSkipTask(world);
         cancelVoteTimeoutTask(world);
+        cancelNightCheckTask(world);
     }
 
     private void cancelSkipTask(World world) {
@@ -667,6 +735,13 @@ public class SleepVoteManager {
 
     private void cancelVoteTimeoutTask(World world) {
         BukkitTask task = voteTimeoutTasks.remove(world.getUID());
+        if (task != null && !task.isCancelled()) {
+            task.cancel();
+        }
+    }
+
+    private void cancelNightCheckTask(World world) {
+        BukkitTask task = nightCheckTasks.remove(world.getUID());
         if (task != null && !task.isCancelled()) {
             task.cancel();
         }
@@ -731,7 +806,9 @@ public class SleepVoteManager {
                 Map.of("admin", initiator.getName()));
     }
 
-    // Event handlers for player connections and world changes
+    /**
+     * Event handlers for player connections and world changes
+     */
     public void handlePlayerJoin(Player player) {
         World world = player.getWorld();
 
@@ -745,6 +822,9 @@ public class SleepVoteManager {
         }, 20L);
     }
 
+    /**
+     * Handles player quitting from the server
+     */
     public void handlePlayerQuit(Player player) {
         // Remove their vote if they had one
         if (hasPlayerVoted(player)) {
@@ -757,6 +837,9 @@ public class SleepVoteManager {
         }
     }
 
+    /**
+     * Handles player changing worlds
+     */
     public void handlePlayerChangeWorld(Player player, World fromWorld, World toWorld) {
         // Remove vote from old world
         WorldData fromData = worldDataMap.get(fromWorld.getUID());
@@ -790,6 +873,9 @@ public class SleepVoteManager {
         voteTimeoutTasks.values().forEach(task -> {
             if (!task.isCancelled()) task.cancel();
         });
+        nightCheckTasks.values().forEach(task -> {
+            if (!task.isCancelled()) task.cancel();
+        });
 
         // Remove all boss bars
         worldBossBars.values().forEach(BossBar::removeAll);
@@ -799,5 +885,6 @@ public class SleepVoteManager {
         worldBossBars.clear();
         skipTasks.clear();
         voteTimeoutTasks.clear();
+        nightCheckTasks.clear();
     }
 }

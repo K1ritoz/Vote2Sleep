@@ -23,22 +23,27 @@ public class PlayerBedListener implements Listener {
         Player player = event.getPlayer();
 
         // Check if bed interaction is enabled in config
-        if (!plugin.getConfigManager().isBedInteractionEnabled()) return;
+        if (!plugin.getConfigManager().isBedInteractionEnabled()) {
+            plugin.getMessageManager().sendMessage(player, "bed-interaction-disabled");
+            return;
+        }
 
         // For Folia compatibility - schedule task based on detected platform
         try {
             if (plugin.getPlatformAdapter().getPlatformName().equals("Folia")) {
                 // Use player-specific scheduler for Folia
                 plugin.getPlatformAdapter().runTaskLaterForPlayer(player, (p) -> {
-                    if (p.isOnline() && p.isSleeping()) { // Additional safety checks
-                        plugin.getVoteManager().startSleepVote(p);
+                    if (p.isOnline() && p.isSleeping()) {
+                        // Additional safety checks
+                        plugin.getVoteManager().startSleepVoteFromBed(p);
                     }
                 }, 2L); // Slightly longer delay for Folia
             } else {
                 // Use standard scheduler for other platforms
                 plugin.getPlatformAdapter().runTaskLaterForPlayer(player, (p) -> {
-                    if (p.isOnline()) { // Safety check
-                        plugin.getVoteManager().startSleepVote(p);
+                    if (p.isOnline()) {
+                        // Safety check
+                        plugin.getVoteManager().startSleepVoteFromBed(p);
                     }
                 }, 1L);
             }
@@ -47,7 +52,7 @@ public class PlayerBedListener implements Listener {
 
             // Fallback: try to start vote immediately
             try {
-                plugin.getVoteManager().startSleepVote(player);
+                plugin.getVoteManager().startSleepVoteFromBed(player);
             } catch (Exception fallbackError) {
                 plugin.getLogger().severe("Failed to start sleep vote even with fallback: " + fallbackError.getMessage());
             }

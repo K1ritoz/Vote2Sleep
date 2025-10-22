@@ -3,7 +3,7 @@
 # Placeholders disponíveis: {player}, {world}, {current}, {required}, {remaining}, {seconds}, {admin}
 
 # Versão das mensagens - Gerenciada automaticamente, NÃO MODIFICAR
-message-version: 2.1
+message-version: 2.2
 
 # ===================================
 # MENSAGENS GERAIS
@@ -16,6 +16,7 @@ player-exempt: "&cVocê está isento da votação de sono!"
 cannot-sleep-now: "&cVocê só pode votar para dormir durante a noite ou tempestades!"
 already-voted: "&cVocê já votou para dormir!"
 no-permission: "&cVocê não tem permissão para usar este comando!"
+bed-interaction-disabled: "&cInteração com cama desabilitada! Use /sleep para votar."
 
 # Mensagens de votação
 vote-removed: "&aSeu voto para dormir foi removido!"

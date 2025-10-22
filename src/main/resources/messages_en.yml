@@ -3,7 +3,7 @@
 # Available placeholders: {player}, {world}, {current}, {required}, {remaining}, {seconds}, {admin}
 
 # Message version - Automatically managed, DO NOT MODIFY
-message-version: 2.1
+message-version: 2.2
 
 # ===================================
 # GENERAL MESSAGES
@@ -16,6 +16,7 @@ player-exempt: "&cYou are exempt from sleep voting!"
 cannot-sleep-now: "&cYou can only vote for sleep during night or storms!"
 already-voted: "&cYou have already voted for sleep!"
 no-permission: "&cYou don't have permission to use this command!"
+bed-interaction-disabled: "&cBed interaction is disabled! Use /sleep instead to vote."
 
 # Vote messages
 vote-removed: "&aYour sleep vote has been removed!"
