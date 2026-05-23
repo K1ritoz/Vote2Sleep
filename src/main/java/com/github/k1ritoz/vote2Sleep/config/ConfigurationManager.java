@@ -205,7 +205,7 @@ public class ConfigurationManager {
     public List<String> getExemptPermissions() { return config.getStringList("advanced.exempt-permissions"); }
 
     public void reload() {
-        loadConfigurations();
+        loadConfig();
     }
 
     private void saveWorldsConfig() {

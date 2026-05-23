@@ -2,7 +2,7 @@
 # A modern sleep voting plugin for Minecraft servers
 
 # Configuration version - Automatically managed, DO NOT MODIFY
-config-version: 2.1
+config-version: "2.1"
 
 # ===================================
 # GENERAL SETTINGS

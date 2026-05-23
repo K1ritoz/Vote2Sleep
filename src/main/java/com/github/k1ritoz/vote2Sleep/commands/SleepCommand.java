@@ -27,7 +27,7 @@ public class SleepCommand implements CommandExecutor, TabCompleter {
 
         if (args.length == 0) {
             if (sender instanceof Player) {
-                handleVoteCommand((Player) sender);
+                handleVoteCommand(sender);
             } else {
                 sendHelpMessage(sender);
             }
@@ -82,19 +82,35 @@ public class SleepCommand implements CommandExecutor, TabCompleter {
     }
 
     private boolean handleVoteCommand(CommandSender sender) {
-        if (!(sender instanceof Player)) {
-            sender.sendMessage("This command can only be used by players!");
+        Player player = requirePlayer(sender);
+        if (player == null) {
             return true;
         }
 
-        Player player = (Player) sender;
         plugin.getVoteManager().startSleepVote(player);
         return true;
     }
 
+    private Player requirePlayer(CommandSender sender) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("This command can only be used by players!");
+            return null;
+        }
+
+        return (Player) sender;
+    }
+
+    private void sendLocalizedMessage(CommandSender sender, String key) {
+        if (sender instanceof Player) {
+            plugin.getMessageManager().sendMessage((Player) sender, key);
+        } else {
+            sender.sendMessage(plugin.getMessageManager().getMessage(key));
+        }
+    }
+
     private boolean handleLanguageCommand(CommandSender sender, String[] args) {
         if (!sender.hasPermission("vote2sleep.admin")) {
-            plugin.getMessageManager().sendMessage((Player) sender, "no-permission");
+            sendLocalizedMessage(sender, "no-permission");
             return true;
         }
 
@@ -123,12 +139,11 @@ public class SleepCommand implements CommandExecutor, TabCompleter {
     }
 
     private boolean handleStatusCommand(CommandSender sender) {
-        if (!(sender instanceof Player)) {
-            sender.sendMessage("This command can only be used by players!");
+        Player player = requirePlayer(sender);
+        if (player == null) {
             return true;
         }
 
-        Player player = (Player) sender;
         World world = player.getWorld();
 
         if (!plugin.getConfigManager().isWorldEnabled(world)) {
@@ -160,17 +175,16 @@ public class SleepCommand implements CommandExecutor, TabCompleter {
     }
 
     private boolean handleEnableCommand(CommandSender sender) {
+        Player player = requirePlayer(sender);
+        if (player == null) {
+            return true;
+        }
+
         if (!sender.hasPermission("vote2sleep.enable")) {
-            plugin.getMessageManager().sendMessage((Player) sender, "no-permission");
+            sendLocalizedMessage(sender, "no-permission");
             return true;
         }
 
-        if (!(sender instanceof Player)) {
-            sender.sendMessage("This command can only be used by players!");
-            return true;
-        }
-
-        Player player = (Player) sender;
         World world = player.getWorld();
 
         if (plugin.getConfigManager().isWorldEnabled(world)) {
@@ -185,17 +199,16 @@ public class SleepCommand implements CommandExecutor, TabCompleter {
     }
 
     private boolean handleDisableCommand(CommandSender sender) {
+        Player player = requirePlayer(sender);
+        if (player == null) {
+            return true;
+        }
+
         if (!sender.hasPermission("vote2sleep.disable")) {
-            plugin.getMessageManager().sendMessage((Player) sender, "no-permission");
+            sendLocalizedMessage(sender, "no-permission");
             return true;
         }
 
-        if (!(sender instanceof Player)) {
-            sender.sendMessage("This command can only be used by players!");
-            return true;
-        }
-
-        Player player = (Player) sender;
         World world = player.getWorld();
 
         if (!plugin.getConfigManager().isWorldEnabled(world)) {
@@ -213,12 +226,7 @@ public class SleepCommand implements CommandExecutor, TabCompleter {
 
     private boolean handleReloadCommand(CommandSender sender) {
         if (!sender.hasPermission("vote2sleep.reload")) {
-            plugin.getMessageManager().sendMessage((Player) sender, "no-permission");
-            return true;
-        }
-
-        if (!(sender instanceof Player)) {
-            sender.sendMessage("This command can only be used by players!");
+            sendLocalizedMessage(sender, "no-permission");
             return true;
         }
 
@@ -227,13 +235,13 @@ public class SleepCommand implements CommandExecutor, TabCompleter {
 
         plugin.getVoteManager().synchronizeBossBarSettings();
 
-        plugin.getMessageManager().sendMessage((Player) sender, "reload-success");
+        sendLocalizedMessage(sender, "reload-success");
         return true;
     }
 
     private boolean handleStatsCommand(CommandSender sender) {
         if (!sender.hasPermission("vote2sleep.stats")) {
-            plugin.getMessageManager().sendMessage((Player) sender, "no-permission");
+            sendLocalizedMessage(sender, "no-permission");
             return true;
         }
 
@@ -260,17 +268,16 @@ public class SleepCommand implements CommandExecutor, TabCompleter {
     }
 
     private boolean handleCancelCommand(CommandSender sender) {
+        Player player = requirePlayer(sender);
+        if (player == null) {
+            return true;
+        }
+
         if (!sender.hasPermission("vote2sleep.cancel")) {
-            plugin.getMessageManager().sendMessage((Player) sender, "no-permission");
+            sendLocalizedMessage(sender, "no-permission");
             return true;
         }
 
-        if (!(sender instanceof Player)) {
-            sender.sendMessage("This command can only be used by players!");
-            return true;
-        }
-
-        Player player = (Player) sender;
         World world = player.getWorld();
 
         plugin.getVoteManager().clearVotes(world);
@@ -281,17 +288,16 @@ public class SleepCommand implements CommandExecutor, TabCompleter {
     }
 
     private boolean handleForceCommand(CommandSender sender) {
+        Player player = requirePlayer(sender);
+        if (player == null) {
+            return true;
+        }
+
         if (!sender.hasPermission("vote2sleep.force")) {
-            plugin.getMessageManager().sendMessage((Player) sender, "no-permission");
+            sendLocalizedMessage(sender, "no-permission");
             return true;
         }
 
-        if (!(sender instanceof Player)) {
-            sender.sendMessage("This command can only be used by players!");
-            return true;
-        }
-
-        Player player = (Player) sender;
         World world = player.getWorld();
 
         if (!plugin.getConfigManager().isWorldEnabled(world)) {
@@ -307,7 +313,7 @@ public class SleepCommand implements CommandExecutor, TabCompleter {
 
     private boolean handleConfigCommand(CommandSender sender, String[] args) {
         if (!sender.hasPermission("vote2sleep.config")) {
-            plugin.getMessageManager().sendMessage((Player) sender, "no-permission");
+            sendLocalizedMessage(sender, "no-permission");
             return true;
         }
 
@@ -317,12 +323,11 @@ public class SleepCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        if (!(sender instanceof Player)) {
-            sender.sendMessage("This command can only be used by players!");
+        Player player = requirePlayer(sender);
+        if (player == null) {
             return true;
         }
 
-        Player player = (Player) sender;
         World world = player.getWorld();
         String setting = args[1].toLowerCase();
 

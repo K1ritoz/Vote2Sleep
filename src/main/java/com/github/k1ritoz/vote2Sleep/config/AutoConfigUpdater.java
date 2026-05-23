@@ -5,10 +5,15 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 public class AutoConfigUpdater {
+
+    private static final int MAX_BACKUPS_PER_FILE = 5;
+    private static final String BACKUP_FOLDER_NAME = "backups";
 
     private final Vote2Sleep plugin;
 
@@ -35,26 +40,29 @@ public class AutoConfigUpdater {
                 return false;
             }
 
-            // Get current versions
-            double userConfigVersion = userConfig.getDouble("config-version", 1.0);
-            double defaultConfigVersion = defaultConfig.getDouble("config-version", 1.0);
-
-            // Check if update is needed based on version
-            if (userConfigVersion >= defaultConfigVersion) {
-                return false; // No update needed
-            }
-
-            // Also check for missing keys as backup
+            String userConfigVersion = getVersion(userConfig, "config-version");
+            String defaultConfigVersion = getVersion(defaultConfig, "config-version");
             Set<String> missingKeys = findMissingKeys(userConfig, defaultConfig);
+            int versionComparison = compareVersions(userConfigVersion, defaultConfigVersion);
+            boolean versionBehind = versionComparison < 0;
 
-            if (missingKeys.isEmpty() && userConfigVersion >= defaultConfigVersion) {
-                // Update version number if keys are present but version is old
-                userConfig.set("config-version", defaultConfigVersion);
-                userConfig.save(userConfigFile);
+            if (versionComparison > 0) {
+                plugin.getLogger().warning("User config version " + userConfigVersion + " is newer than bundled version " + defaultConfigVersion + ". Skipping auto-update to avoid downgrading the file.");
                 return false;
             }
 
-            plugin.getLogger().info("Updating configuration from version " + String.format("%.1f", userConfigVersion) + " to " + String.format("%.1f", defaultConfigVersion));
+            if (!versionBehind && missingKeys.isEmpty()) {
+                return false;
+            }
+
+            if (missingKeys.isEmpty()) {
+                userConfig.set("config-version", defaultConfigVersion);
+                userConfig.save(userConfigFile);
+                plugin.getLogger().info("Configuration version updated from " + userConfigVersion + " to " + defaultConfigVersion);
+                return true;
+            }
+
+            plugin.getLogger().info("Updating configuration from version " + userConfigVersion + " to " + defaultConfigVersion);
             plugin.getLogger().info("Found " + missingKeys.size() + " new configuration options");
 
             // Backup current config
@@ -99,26 +107,29 @@ public class AutoConfigUpdater {
                 return false;
             }
 
-            // Get current versions
-            double userMessageVersion = userMessages.getDouble("message-version", 1.0);
-            double defaultMessageVersion = defaultMessages.getDouble("message-version", 1.0);
-
-            // Check if update is needed based on version
-            if (userMessageVersion >= defaultMessageVersion) {
-                return false; // No update needed
-            }
-
-            // Also check for missing keys as backup
+            String userMessageVersion = getVersion(userMessages, "message-version");
+            String defaultMessageVersion = getVersion(defaultMessages, "message-version");
             Set<String> missingKeys = findMissingKeys(userMessages, defaultMessages);
+            int versionComparison = compareVersions(userMessageVersion, defaultMessageVersion);
+            boolean versionBehind = versionComparison < 0;
 
-            if (missingKeys.isEmpty() && userMessageVersion >= defaultMessageVersion) {
-                // Update version number if keys are present but version is old
-                userMessages.set("message-version", defaultMessageVersion);
-                userMessages.save(userMessagesFile);
+            if (versionComparison > 0) {
+                plugin.getLogger().warning("User message version " + userMessageVersion + " for " + language + " is newer than bundled version " + defaultMessageVersion + ". Skipping auto-update to avoid downgrading the file.");
                 return false;
             }
 
-            plugin.getLogger().info("Updating " + language + " messages from version " + String.format("%.1f", userMessageVersion) + " to " + String.format("%.1f", defaultMessageVersion));
+            if (!versionBehind && missingKeys.isEmpty()) {
+                return false;
+            }
+
+            if (missingKeys.isEmpty()) {
+                userMessages.set("message-version", defaultMessageVersion);
+                userMessages.save(userMessagesFile);
+                plugin.getLogger().info("Message version for " + language + " updated from " + userMessageVersion + " to " + defaultMessageVersion);
+                return true;
+            }
+
+            plugin.getLogger().info("Updating " + language + " messages from version " + userMessageVersion + " to " + defaultMessageVersion);
             plugin.getLogger().info("Found " + missingKeys.size() + " new message keys");
 
             // Backup current messages
@@ -145,15 +156,7 @@ public class AutoConfigUpdater {
     private FileConfiguration getDefaultConfig() {
         try (InputStream stream = plugin.getResource("config.yml")) {
             if (stream == null) return null;
-
-            // Create temporary file to load the default config
-            File tempFile = File.createTempFile("vote2sleep-default-config", ".yml");
-            Files.copy(stream, tempFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-
-            FileConfiguration config = YamlConfiguration.loadConfiguration(tempFile);
-            tempFile.delete();
-
-            return config;
+            return YamlConfiguration.loadConfiguration(new InputStreamReader(stream, StandardCharsets.UTF_8));
         } catch (IOException e) {
             return null;
         }
@@ -162,22 +165,48 @@ public class AutoConfigUpdater {
     private FileConfiguration getDefaultMessages(String language) {
         try (InputStream stream = plugin.getResource("messages_" + language + ".yml")) {
             if (stream == null) return null;
-
-            // Create temporary file to load the default messages
-            File tempFile = File.createTempFile("vote2sleep-default-messages", ".yml");
-            Files.copy(stream, tempFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-
-            FileConfiguration messages = YamlConfiguration.loadConfiguration(tempFile);
-            tempFile.delete();
-
-            return messages;
+            return YamlConfiguration.loadConfiguration(new InputStreamReader(stream, StandardCharsets.UTF_8));
         } catch (IOException e) {
             return null;
         }
     }
 
+    private String getVersion(FileConfiguration config, String key) {
+        Object version = config.get(key);
+        return version == null ? "1.0" : String.valueOf(version);
+    }
+
+    private int compareVersions(String currentVersion, String defaultVersion) {
+        int[] currentParts = parseVersion(currentVersion);
+        int[] defaultParts = parseVersion(defaultVersion);
+        int maxLength = Math.max(currentParts.length, defaultParts.length);
+
+        for (int i = 0; i < maxLength; i++) {
+            int current = i < currentParts.length ? currentParts[i] : 0;
+            int latest = i < defaultParts.length ? defaultParts[i] : 0;
+
+            if (current != latest) {
+                return Integer.compare(current, latest);
+            }
+        }
+
+        return 0;
+    }
+
+    private int[] parseVersion(String version) {
+        String[] parts = version.split("\\.");
+        int[] parsed = new int[parts.length];
+
+        for (int i = 0; i < parts.length; i++) {
+            String numericPart = parts[i].replaceAll("[^0-9]", "");
+            parsed[i] = numericPart.isEmpty() ? 0 : Integer.parseInt(numericPart);
+        }
+
+        return parsed;
+    }
+
     private Set<String> findMissingKeys(FileConfiguration userConfig, FileConfiguration defaultConfig) {
-        Set<String> missingKeys = new HashSet<>();
+        Set<String> missingKeys = new TreeSet<>();
         Set<String> defaultKeys = getAllKeys(defaultConfig);
         Set<String> userKeys = getAllKeys(userConfig);
 
@@ -213,15 +242,62 @@ public class AutoConfigUpdater {
     }
 
     private void backupConfig(File configFile) throws IOException {
-        File backupFile = new File(plugin.getDataFolder(), "config.yml.backup." + System.currentTimeMillis());
-        Files.copy(configFile.toPath(), backupFile.toPath());
+        File backupFile = backupFile(configFile, "config.yml");
         plugin.getLogger().info("Configuration backed up to: " + backupFile.getName());
     }
 
     private void backupMessages(File messagesFile, String language) throws IOException {
-        File backupFile = new File(plugin.getDataFolder(), "messages_" + language + ".yml.backup." + System.currentTimeMillis());
-        Files.copy(messagesFile.toPath(), backupFile.toPath());
+        File backupFile = backupFile(messagesFile, "messages_" + language + ".yml");
         plugin.getLogger().info("Messages backed up to: " + backupFile.getName());
+    }
+
+    private File backupFile(File sourceFile, String fileName) throws IOException {
+        File backupDirectory = new File(plugin.getDataFolder(), BACKUP_FOLDER_NAME);
+        Files.createDirectories(backupDirectory.toPath());
+
+        File backupFile = new File(backupDirectory, fileName + ".backup." + System.currentTimeMillis());
+        Files.copy(sourceFile.toPath(), backupFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+        cleanupOldBackups(fileName);
+        return backupFile;
+    }
+
+    private void cleanupOldBackups(String fileName) {
+        List<File> backupFiles = findBackupFiles(fileName);
+        backupFiles.sort(Comparator.comparingLong(File::lastModified).reversed());
+
+        for (int i = MAX_BACKUPS_PER_FILE; i < backupFiles.size(); i++) {
+            File oldBackup = backupFiles.get(i);
+            try {
+                Files.deleteIfExists(oldBackup.toPath());
+                if (isDebugMode()) {
+                    plugin.getLogger().info("Deleted old backup: " + oldBackup.getName());
+                }
+            } catch (IOException e) {
+                plugin.getLogger().warning("Could not delete old backup " + oldBackup.getName() + ": " + e.getMessage());
+            }
+        }
+    }
+
+    private List<File> findBackupFiles(String fileName) {
+        List<File> backupFiles = new ArrayList<>();
+        String backupPrefix = fileName + ".backup.";
+
+        collectBackupFiles(plugin.getDataFolder(), backupPrefix, backupFiles);
+        collectBackupFiles(new File(plugin.getDataFolder(), BACKUP_FOLDER_NAME), backupPrefix, backupFiles);
+
+        return backupFiles;
+    }
+
+    private void collectBackupFiles(File directory, String backupPrefix, List<File> backupFiles) {
+        File[] files = directory.listFiles((dir, name) -> name.startsWith(backupPrefix));
+        if (files != null) {
+            backupFiles.addAll(Arrays.asList(files));
+        }
+    }
+
+    private boolean isDebugMode() {
+        return plugin.getConfigManager() != null && plugin.getConfigManager().isDebugMode();
     }
 
     /**
@@ -242,7 +318,10 @@ public class AutoConfigUpdater {
         try {
             // Copy default config to temp file
             try (InputStream defaultStream = plugin.getResource("config.yml")) {
-                Files.copy(defaultStream, tempFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                if (defaultStream == null) {
+                    throw new IOException("Default config resource not found");
+                }
+                Files.copy(defaultStream, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
 
             // Load the clean default structure
@@ -274,7 +353,7 @@ public class AutoConfigUpdater {
                     Object userValue = userConfig.get(key);
                     cleanConfig.set(key, userValue);
 
-                    if (plugin.getConfigManager().isDebugMode()) {
+                    if (isDebugMode()) {
                         plugin.getLogger().info("Preserved user setting: " + key + " = " + userValue);
                     }
                 }
@@ -297,7 +376,10 @@ public class AutoConfigUpdater {
         try {
             // Copy default messages to temp file
             try (InputStream defaultStream = plugin.getResource("messages_" + language + ".yml")) {
-                Files.copy(defaultStream, tempFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                if (defaultStream == null) {
+                    throw new IOException("Default messages resource not found: messages_" + language + ".yml");
+                }
+                Files.copy(defaultStream, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
 
             // Load the clean default structure

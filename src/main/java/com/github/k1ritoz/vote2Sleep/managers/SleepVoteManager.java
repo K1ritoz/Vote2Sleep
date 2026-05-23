@@ -127,35 +127,62 @@ public class SleepVoteManager {
     }
 
     public void removeSleepVote(Player player) {
-        World world = player.getWorld();
+        removeVoteFromWorld(player, player.getWorld(), true);
+    }
+
+    private void removeVoteFromWorld(Player player, World world, boolean notifyPlayer) {
         WorldData worldData = worldDataMap.get(world.getUID());
 
         if (worldData == null || !worldData.hasPlayerVoted(player.getUniqueId())) {
             return;
         }
 
-        // Don't allow vote removal during dawn animation
         if (plugin.getDawnAnimationManager().isAnimating(world)) {
-            plugin.getMessageManager().sendMessage(player, "dawn-animation-active");
+            if (notifyPlayer) {
+                plugin.getMessageManager().sendMessage(player, "dawn-animation-active");
+            }
             return;
         }
 
         SleepVote vote = worldData.getVote(player.getUniqueId());
+        if (vote == null) {
+            return;
+        }
+
         worldData.removeVote(player.getUniqueId());
 
-        // Fire event
         SleepVoteRemovedEvent event = new SleepVoteRemovedEvent(player, world, vote);
         Bukkit.getPluginManager().callEvent(event);
 
-        // Update displays
-        updateBossBar(world);
+        handleVoteCountChangedAfterRemoval(world, worldData);
 
-        // Cancel skip if no longer enough votes
-        if (!areRequirementsMet(world)) {
-            cancelSkipTask(world);
+        if (notifyPlayer) {
+            plugin.getMessageManager().sendMessage(player, "vote-removed");
+        }
+    }
+
+    private void handleVoteCountChangedAfterRemoval(World world, WorldData worldData) {
+        if (worldData.isEmpty()) {
+            clearVotes(world);
+            return;
         }
 
-        plugin.getMessageManager().sendMessage(player, "vote-removed");
+        updateBossBar(world);
+
+        if (!areRequirementsMet(world)) {
+            cancelSkipTask(world);
+            scheduleVoteMaintenance(world);
+        }
+    }
+
+    private void scheduleVoteMaintenance(World world) {
+        WorldData worldData = worldDataMap.get(world.getUID());
+        if (worldData == null || worldData.isEmpty()) {
+            return;
+        }
+
+        scheduleVoteTimeout(world);
+        scheduleNightCheckTask(world);
     }
 
     /**
@@ -201,9 +228,17 @@ public class SleepVoteManager {
 
         // Use global scheduler for the countdown, but world operations will use region scheduler
         BukkitTask task = plugin.getPlatformAdapter().runTaskLater(() -> {
-            // Final check before executing skip
-            if (areRequirementsMet(world)) {
-                executeNightSkip(world);
+            try {
+                // Final check before executing skip
+                if (areRequirementsMet(world)) {
+                    executeNightSkip(world);
+                } else if (getCurrentVotes(world) == 0) {
+                    clearVotes(world);
+                } else {
+                    scheduleVoteMaintenance(world);
+                }
+            } finally {
+                skipTasks.remove(world.getUID());
             }
         }, delay);
 
@@ -242,16 +277,25 @@ public class SleepVoteManager {
      * Executes night skip with optional dawn animation
      */
     private void executeNightSkip(World world) {
+        if (!areRequirementsMet(world)) {
+            return;
+        }
+
         WorldData worldData = worldDataMap.get(world.getUID());
         if (worldData == null) return;
 
         List<SleepVote> votes = new ArrayList<>(worldData.getVotes().values());
+        if (votes.isEmpty()) {
+            clearVotes(world);
+            return;
+        }
 
         // Fire pre-skip event
         PreNightSkipEvent preEvent = new PreNightSkipEvent(world, votes);
         Bukkit.getPluginManager().callEvent(preEvent);
 
         if (preEvent.isCancelled()) {
+            scheduleVoteMaintenance(world);
             return;
         }
 
@@ -474,7 +518,7 @@ public class SleepVoteManager {
         int currentVotes = worldData.getVotes().size();
         int requiredVotes = getRequiredVotes(world);
 
-        return currentVotes >= requiredVotes;
+        return currentVotes > 0 && requiredVotes > 0 && currentVotes >= requiredVotes;
     }
 
     private int getEligiblePlayerCount(World world) {
@@ -598,6 +642,10 @@ public class SleepVoteManager {
         } else {
             int currentVotes = worldData.getVotes().size();
             int requiredVotes = getRequiredVotes(world);
+            if (requiredVotes <= 0) {
+                clearVotes(world);
+                return;
+            }
 
             try {
                 String title = plugin.getMessageManager().getBossBarTitle(currentVotes, requiredVotes);
@@ -688,6 +736,9 @@ public class SleepVoteManager {
 
         int currentVotes = worldData.getVotes().size();
         int requiredVotes = getRequiredVotes(world);
+        if (currentVotes <= 0 || requiredVotes <= 0) {
+            return;
+        }
 
         plugin.getMessageManager().sendWorldMessage(world, "vote-cast", Map.of(
                 "current", String.valueOf(currentVotes),
@@ -707,6 +758,9 @@ public class SleepVoteManager {
 
             int currentVotes = worldData.getVotes().size();
             int requiredVotes = getRequiredVotes(world);
+            if (currentVotes <= 0 || requiredVotes <= 0) {
+                return;
+            }
 
             for (Player player : world.getPlayers()) {
                 plugin.getMessageManager().sendActionBar(player, "vote-cast-actionbar",
@@ -764,6 +818,10 @@ public class SleepVoteManager {
 
     public int getRequiredVotes(World world) {
         int onlinePlayers = getEligiblePlayerCount(world);
+        if (onlinePlayers <= 0) {
+            return 0;
+        }
+
         double percentage = plugin.getConfigManager().getVotePercentage(world);
         int required = (int) Math.ceil(onlinePlayers * percentage);
 
@@ -775,7 +833,7 @@ public class SleepVoteManager {
             required = Math.min(required, maximum);
         }
 
-        return Math.min(required, onlinePlayers);
+        return Math.max(1, Math.min(required, onlinePlayers));
     }
 
     public void forceSkip(World world, Player initiator) {
@@ -826,10 +884,7 @@ public class SleepVoteManager {
      * Handles player quitting from the server
      */
     public void handlePlayerQuit(Player player) {
-        // Remove their vote if they had one
-        if (hasPlayerVoted(player)) {
-            removeSleepVote(player);
-        }
+        removeVoteFromWorld(player, player.getWorld(), false);
 
         // Handle dawn animation player quit
         if (plugin.getDawnAnimationManager() != null) {
@@ -841,18 +896,7 @@ public class SleepVoteManager {
      * Handles player changing worlds
      */
     public void handlePlayerChangeWorld(Player player, World fromWorld, World toWorld) {
-        // Remove vote from old world
-        WorldData fromData = worldDataMap.get(fromWorld.getUID());
-        if (fromData != null && fromData.hasPlayerVoted(player.getUniqueId())) {
-            SleepVote vote = fromData.getVote(player.getUniqueId());
-            fromData.removeVote(player.getUniqueId());
-
-            // Fire event
-            SleepVoteRemovedEvent event = new SleepVoteRemovedEvent(player, fromWorld, vote);
-            Bukkit.getPluginManager().callEvent(event);
-
-            updateBossBar(fromWorld);
-        }
+        removeVoteFromWorld(player, fromWorld, false);
 
         // Add to new world's boss bar
         addPlayerToBossBar(toWorld, player);

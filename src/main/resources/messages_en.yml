@@ -3,7 +3,7 @@
 # Available placeholders: {player}, {world}, {current}, {required}, {remaining}, {seconds}, {admin}
 
 # Message version - Automatically managed, DO NOT MODIFY
-message-version: 2.2
+message-version: "2.2"
 
 # ===================================
 # GENERAL MESSAGES
