@@ -125,7 +125,16 @@ public class Vote2SleepPlaceholders extends PlaceholderExpansion {
                     return String.valueOf(Math.round(percentage * 100));
 
                 case "eligible_players":
-                    return String.valueOf(getEligiblePlayerCount(world));
+                    return String.valueOf(plugin.getVoteManager().getEligiblePlayerCount(world));
+
+                case "afk_players":
+                    return String.valueOf(plugin.getHooksManager().getAfkPlayerCount(world.getPlayers()));
+
+                case "is_afk":
+                    return String.valueOf(plugin.getVoteManager().isPlayerAfk(player));
+
+                case "is_afk_yes_no":
+                    return plugin.getVoteManager().isPlayerAfk(player) ? "Yes" : "No";
 
                 case "total_players":
                     return String.valueOf(world.getPlayers().size());
@@ -197,33 +206,6 @@ public class Vote2SleepPlaceholders extends PlaceholderExpansion {
     private boolean isNight(World world) {
         long time = world.getTime();
         return time >= 12542 && time <= 23459;
-    }
-
-    private int getEligiblePlayerCount(World world) {
-        return (int) world.getPlayers().stream()
-                .filter(p -> !isPlayerExempt(p))
-                .count();
-    }
-
-    private boolean isPlayerExempt(Player player) {
-        try {
-            // Check game mode exemptions
-            String gameMode = player.getGameMode().name();
-            if (plugin.getConfigManager().getExemptGameModes().contains(gameMode)) {
-                return true;
-            }
-
-            // Check permission exemptions
-            for (String permission : plugin.getConfigManager().getExemptPermissions()) {
-                if (player.hasPermission(permission)) {
-                    return true;
-                }
-            }
-        } catch (Exception e) {
-            // If error checking exemptions, assume not exempt
-        }
-
-        return false;
     }
 
     private String formatTime(long ticks) {

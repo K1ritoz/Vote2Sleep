@@ -16,6 +16,7 @@ import org.bukkit.scheduler.BukkitTask;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
 
 public class SleepVoteManager {
 
@@ -39,7 +40,7 @@ public class SleepVoteManager {
      * Starts sleep vote from command (/sleep) - allows voting even if bed interaction is disabled
      */
     public void startSleepVote(Player player) {
-        startSleepVoteInternal(player, true);
+        startSleepVoteInternal(player);
     }
 
     /**
@@ -52,13 +53,15 @@ public class SleepVoteManager {
             return;
         }
 
-        startSleepVoteInternal(player, false);
+        startSleepVoteInternal(player);
     }
 
     /**
      * Internal method for processing sleep votes
      */
-    private void startSleepVoteInternal(Player player, boolean skipBedCheck) {
+    private void startSleepVoteInternal(Player player) {
+        plugin.getHooksManager().recordPlayerActivity(player);
+
         World world = player.getWorld();
 
         // Check if world is enabled
@@ -70,6 +73,12 @@ public class SleepVoteManager {
         // Check if dawn animation is active
         if (plugin.getDawnAnimationManager().isAnimating(world)) {
             plugin.getMessageManager().sendMessage(player, "dawn-animation-active");
+            return;
+        }
+
+        // Check if player is AFK
+        if (isAfkVotingBlocked(player)) {
+            plugin.getMessageManager().sendMessage(player, "player-afk");
             return;
         }
 
@@ -284,7 +293,7 @@ public class SleepVoteManager {
         WorldData worldData = worldDataMap.get(world.getUID());
         if (worldData == null) return;
 
-        List<SleepVote> votes = new ArrayList<>(worldData.getVotes().values());
+        List<SleepVote> votes = getEligibleVotes(world, worldData);
         if (votes.isEmpty()) {
             clearVotes(world);
             return;
@@ -391,8 +400,7 @@ public class SleepVoteManager {
                 }
 
             } catch (Exception e) {
-                plugin.getLogger().warning("Error performing world skip actions: " + e.getMessage());
-                e.printStackTrace();
+                plugin.getLogger().log(Level.WARNING, "Error performing world skip actions", e);
             }
         }, 1L);
 
@@ -427,8 +435,7 @@ public class SleepVoteManager {
                             });
                         }
                     } catch (Exception e) {
-                        plugin.getLogger().warning("Error performing player actions for " + p.getName() + ": " + e.getMessage());
-                        e.printStackTrace();
+                        plugin.getLogger().log(Level.WARNING, "Error performing player actions for " + p.getName(), e);
                     }
                 }, 2L); // Delay slightly to ensure world operations complete first
             }
@@ -444,8 +451,7 @@ public class SleepVoteManager {
                         plugin.getMessageManager().sendWorldMessage(world, "storm-skipped");
                     }
                 } catch (Exception e) {
-                    plugin.getLogger().warning("Error sending skip messages: " + e.getMessage());
-                    e.printStackTrace();
+                    plugin.getLogger().log(Level.WARNING, "Error sending skip messages", e);
                 }
             }, 3L);
         }
@@ -458,8 +464,7 @@ public class SleepVoteManager {
                     try {
                         plugin.getEffectsManager().playSkipEffects(w, votes, wasNight);
                     } catch (Exception e) {
-                        plugin.getLogger().warning("Error playing skip effects: " + e.getMessage());
-                        e.printStackTrace();
+                        plugin.getLogger().log(Level.WARNING, "Error playing skip effects", e);
                     }
                 }, 4L);
             } else {
@@ -468,8 +473,7 @@ public class SleepVoteManager {
                     try {
                         plugin.getEffectsManager().playSkipEffects(world, votes, wasNight);
                     } catch (Exception e) {
-                        plugin.getLogger().warning("Error playing skip effects: " + e.getMessage());
-                        e.printStackTrace();
+                        plugin.getLogger().log(Level.WARNING, "Error playing skip effects", e);
                     }
                 }, 4L);
             }
@@ -481,7 +485,7 @@ public class SleepVoteManager {
         return worldDataMap.computeIfAbsent(world.getUID(), k -> new WorldData(world));
     }
 
-    private boolean isPlayerExempt(Player player) {
+    public boolean isPlayerExempt(Player player) {
         // Check game mode exemptions
         String gameMode = player.getGameMode().name();
         if (plugin.getConfigManager().getExemptGameModes().contains(gameMode)) {
@@ -495,7 +499,19 @@ public class SleepVoteManager {
             }
         }
 
-        return false;
+        return isAfkExcluded(player);
+    }
+
+    public boolean isPlayerAfk(Player player) {
+        return plugin.getHooksManager() != null && plugin.getHooksManager().isPlayerAfk(player);
+    }
+
+    private boolean isAfkExcluded(Player player) {
+        return plugin.getConfigManager().isAfkDetectionEnabled() && isPlayerAfk(player);
+    }
+
+    private boolean isAfkVotingBlocked(Player player) {
+        return plugin.getConfigManager().shouldPreventAfkVoting() && isAfkExcluded(player);
     }
 
     private boolean canSleep(World world) {
@@ -515,13 +531,13 @@ public class SleepVoteManager {
         WorldData worldData = worldDataMap.get(world.getUID());
         if (worldData == null) return false;
 
-        int currentVotes = worldData.getVotes().size();
+        int currentVotes = getCurrentVotes(world);
         int requiredVotes = getRequiredVotes(world);
 
-        return currentVotes > 0 && requiredVotes > 0 && currentVotes >= requiredVotes;
+        return requiredVotes > 0 && currentVotes >= requiredVotes;
     }
 
-    private int getEligiblePlayerCount(World world) {
+    public int getEligiblePlayerCount(World world) {
         return (int) world.getPlayers().stream()
                 .filter(p -> !isPlayerExempt(p))
                 .count();
@@ -640,10 +656,17 @@ public class SleepVoteManager {
                 }
             }
         } else {
-            int currentVotes = worldData.getVotes().size();
+            int currentVotes = getCurrentVotes(world);
             int requiredVotes = getRequiredVotes(world);
-            if (requiredVotes <= 0) {
-                clearVotes(world);
+            if (currentVotes <= 0 || requiredVotes <= 0) {
+                try {
+                    bossBar.setVisible(false);
+                    bossBar.removeAll();
+                } catch (Exception e) {
+                    if (plugin.getConfigManager().isDebugMode()) {
+                        plugin.getLogger().warning("Error hiding BossBar: " + e.getMessage());
+                    }
+                }
                 return;
             }
 
@@ -734,7 +757,7 @@ public class SleepVoteManager {
         WorldData worldData = worldDataMap.get(world.getUID());
         if (worldData == null) return;
 
-        int currentVotes = worldData.getVotes().size();
+        int currentVotes = getCurrentVotes(world);
         int requiredVotes = getRequiredVotes(world);
         if (currentVotes <= 0 || requiredVotes <= 0) {
             return;
@@ -756,7 +779,7 @@ public class SleepVoteManager {
             WorldData worldData = worldDataMap.get(world.getUID());
             if (worldData == null) return;
 
-            int currentVotes = worldData.getVotes().size();
+            int currentVotes = getCurrentVotes(world);
             int requiredVotes = getRequiredVotes(world);
             if (currentVotes <= 0 || requiredVotes <= 0) {
                 return;
@@ -813,7 +836,20 @@ public class SleepVoteManager {
 
     public int getCurrentVotes(World world) {
         WorldData data = worldDataMap.get(world.getUID());
-        return data != null ? data.getVotes().size() : 0;
+        return data != null ? getEligibleVotes(world, data).size() : 0;
+    }
+
+    private List<SleepVote> getEligibleVotes(World world, WorldData worldData) {
+        List<SleepVote> votes = new ArrayList<>();
+
+        for (SleepVote vote : worldData.getVotes().values()) {
+            Player voter = Bukkit.getPlayer(vote.getPlayerUUID());
+            if (voter != null && voter.isOnline() && voter.getWorld().equals(world) && !isPlayerExempt(voter)) {
+                votes.add(vote);
+            }
+        }
+
+        return votes;
     }
 
     public int getRequiredVotes(World world) {

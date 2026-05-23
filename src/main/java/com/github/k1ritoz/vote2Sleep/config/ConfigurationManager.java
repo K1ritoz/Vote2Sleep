@@ -8,7 +8,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -18,7 +17,7 @@ public class ConfigurationManager {
     private FileConfiguration config;
     private FileConfiguration worldConfig;
     private File worldsFile;
-    private AutoConfigUpdater autoUpdater;
+    private final AutoConfigUpdater autoUpdater;
 
     public ConfigurationManager(Vote2Sleep plugin) {
         this.plugin = plugin;
@@ -46,7 +45,9 @@ public class ConfigurationManager {
         this.worldsFile = new File(plugin.getDataFolder(), "worlds.yml");
         if (!worldsFile.exists()) {
             try {
-                worldsFile.createNewFile();
+                if (!worldsFile.createNewFile()) {
+                    plugin.getLogger().warning("worlds.yml was not created because it already exists");
+                }
             } catch (IOException e) {
                 plugin.getLogger().severe("Could not create worlds.yml file: " + e.getMessage());
             }
@@ -110,8 +111,23 @@ public class ConfigurationManager {
         if (!config.contains("advanced.update-checker")) config.set("advanced.update-checker", true);
         if (!config.contains("advanced.debug-mode")) config.set("advanced.debug-mode", false);
         if (!config.contains("advanced.metrics")) config.set("advanced.metrics", true);
-        if (!config.contains("advanced.exempt-gamemodes")) config.set("advanced.exempt-gamemodes", Arrays.asList("SPECTATOR", "CREATIVE"));
-        if (!config.contains("advanced.exempt-permissions")) config.set("advanced.exempt-permissions", Arrays.asList("vote2sleep.exempt"));
+        if (!config.contains("afk-detection.enabled")) config.set("afk-detection.enabled", true);
+        if (!config.contains("afk-detection.prevent-afk-voting")) config.set("afk-detection.prevent-afk-voting", true);
+        if (!config.contains("afk-detection.hooks.enabled")) config.set("afk-detection.hooks.enabled", true);
+        if (!config.contains("afk-detection.hooks.essentials")) config.set("afk-detection.hooks.essentials", true);
+        if (!config.contains("afk-detection.hooks.cmi")) config.set("afk-detection.hooks.cmi", true);
+        if (!config.contains("afk-detection.hooks.placeholderapi.enabled")) config.set("afk-detection.hooks.placeholderapi.enabled", true);
+        if (!config.contains("afk-detection.hooks.placeholderapi.placeholders")) config.set("afk-detection.hooks.placeholderapi.placeholders", List.of("%essentials_afk%", "%cmi_user_afk%"));
+        if (!config.contains("afk-detection.hooks.placeholderapi.true-values")) config.set("afk-detection.hooks.placeholderapi.true-values", List.of("true", "yes", "sim", "afk", "1", "on"));
+        if (!config.contains("afk-detection.hooks.placeholderapi.false-values")) config.set("afk-detection.hooks.placeholderapi.false-values", List.of("false", "no", "nao", "active", "not afk", "0", "off"));
+        if (!config.contains("afk-detection.hooks.generic-plugins")) config.set("afk-detection.hooks.generic-plugins", List.of("AFKPlus", "AdvancedAFK", "AntiAFKPlus"));
+        if (!config.contains("afk-detection.hooks.metadata")) config.set("afk-detection.hooks.metadata", true);
+        if (!config.contains("afk-detection.hooks.sleeping-ignored")) config.set("afk-detection.hooks.sleeping-ignored", true);
+        if (!config.contains("afk-detection.internal.enabled")) config.set("afk-detection.internal.enabled", true);
+        if (!config.contains("afk-detection.internal.timeout-seconds")) config.set("afk-detection.internal.timeout-seconds", 300);
+        if (!config.contains("afk-detection.internal.track-look-movement")) config.set("afk-detection.internal.track-look-movement", false);
+        if (!config.contains("advanced.exempt-gamemodes")) config.set("advanced.exempt-gamemodes", List.of("SPECTATOR", "CREATIVE"));
+        if (!config.contains("advanced.exempt-permissions")) config.set("advanced.exempt-permissions", List.of("vote2sleep.exempt"));
 
         // Save only if there were changes
         plugin.saveConfig();
@@ -201,6 +217,21 @@ public class ConfigurationManager {
     public boolean isUpdateCheckEnabled() { return config.getBoolean("advanced.update-checker"); }
     public boolean isDebugMode() { return config.getBoolean("advanced.debug-mode"); }
     public boolean isMetricsEnabled() { return config.getBoolean("advanced.metrics"); }
+    public boolean isAfkDetectionEnabled() { return config.getBoolean("afk-detection.enabled"); }
+    public boolean shouldPreventAfkVoting() { return config.getBoolean("afk-detection.prevent-afk-voting"); }
+    public boolean areAfkHooksEnabled() { return config.getBoolean("afk-detection.hooks.enabled"); }
+    public boolean isEssentialsAfkHookEnabled() { return config.getBoolean("afk-detection.hooks.essentials"); }
+    public boolean isCmiAfkHookEnabled() { return config.getBoolean("afk-detection.hooks.cmi"); }
+    public boolean isPlaceholderApiAfkHookEnabled() { return config.getBoolean("afk-detection.hooks.placeholderapi.enabled"); }
+    public List<String> getPlaceholderApiAfkPlaceholders() { return config.getStringList("afk-detection.hooks.placeholderapi.placeholders"); }
+    public List<String> getPlaceholderApiAfkTrueValues() { return config.getStringList("afk-detection.hooks.placeholderapi.true-values"); }
+    public List<String> getPlaceholderApiAfkFalseValues() { return config.getStringList("afk-detection.hooks.placeholderapi.false-values"); }
+    public List<String> getGenericAfkPluginNames() { return config.getStringList("afk-detection.hooks.generic-plugins"); }
+    public boolean isMetadataAfkHookEnabled() { return config.getBoolean("afk-detection.hooks.metadata"); }
+    public boolean isSleepingIgnoredAfkHookEnabled() { return config.getBoolean("afk-detection.hooks.sleeping-ignored"); }
+    public boolean isInternalAfkDetectionEnabled() { return config.getBoolean("afk-detection.internal.enabled"); }
+    public int getInternalAfkTimeoutSeconds() { return config.getInt("afk-detection.internal.timeout-seconds"); }
+    public boolean shouldTrackAfkLookMovement() { return config.getBoolean("afk-detection.internal.track-look-movement"); }
     public List<String> getExemptGameModes() { return config.getStringList("advanced.exempt-gamemodes"); }
     public List<String> getExemptPermissions() { return config.getStringList("advanced.exempt-permissions"); }
 

@@ -1,6 +1,7 @@
 package com.github.k1ritoz.vote2Sleep.config;
 
 import com.github.k1ritoz.vote2Sleep.Vote2Sleep;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -9,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
+import java.util.logging.Level;
 
 public class AutoConfigUpdater {
 
@@ -69,7 +71,7 @@ public class AutoConfigUpdater {
             backupConfig(userConfigFile);
 
             // Update config while preserving structure and comments
-            updateConfigWithComments(userConfigFile, defaultConfig, missingKeys);
+            updateConfigWithComments(userConfigFile);
 
             // Update the version in the user config
             FileConfiguration updatedConfig = YamlConfiguration.loadConfiguration(userConfigFile);
@@ -80,8 +82,7 @@ public class AutoConfigUpdater {
             return true;
 
         } catch (Exception e) {
-            plugin.getLogger().severe("Error updating configuration: " + e.getMessage());
-            e.printStackTrace();
+            plugin.getLogger().log(Level.SEVERE, "Error updating configuration", e);
             return false;
         }
     }
@@ -136,7 +137,7 @@ public class AutoConfigUpdater {
             backupMessages(userMessagesFile, language);
 
             // Update messages while preserving structure and comments
-            updateMessagesWithComments(userMessagesFile, defaultMessages, missingKeys);
+            updateMessagesWithComments(userMessagesFile);
 
             // Update the version in the user messages
             FileConfiguration updatedMessages = YamlConfiguration.loadConfiguration(userMessagesFile);
@@ -147,8 +148,7 @@ public class AutoConfigUpdater {
             return true;
 
         } catch (Exception e) {
-            plugin.getLogger().severe("Error updating messages for " + language + ": " + e.getMessage());
-            e.printStackTrace();
+            plugin.getLogger().log(Level.SEVERE, "Error updating messages for " + language, e);
             return false;
         }
     }
@@ -225,16 +225,22 @@ public class AutoConfigUpdater {
 
     private Set<String> getAllKeys(FileConfiguration config) {
         Set<String> keys = new HashSet<>();
-        getAllKeysRecursive(config.getRoot(), "", keys);
+        ConfigurationSection root = config.getRoot();
+        if (root != null) {
+            getAllKeysRecursive(root, "", keys);
+        }
         return keys;
     }
 
-    private void getAllKeysRecursive(org.bukkit.configuration.ConfigurationSection section, String prefix, Set<String> keys) {
+    private void getAllKeysRecursive(ConfigurationSection section, String prefix, Set<String> keys) {
         for (String key : section.getKeys(false)) {
             String fullKey = prefix.isEmpty() ? key : prefix + "." + key;
 
             if (section.isConfigurationSection(key)) {
-                getAllKeysRecursive(section.getConfigurationSection(key), fullKey, keys);
+                ConfigurationSection childSection = section.getConfigurationSection(key);
+                if (childSection != null) {
+                    getAllKeysRecursive(childSection, fullKey, keys);
+                }
             } else {
                 keys.add(fullKey);
             }
@@ -303,7 +309,7 @@ public class AutoConfigUpdater {
     /**
      * Updates config file while preserving comments and structure
      */
-    private void updateConfigWithComments(File userConfigFile, FileConfiguration defaultConfig, Set<String> missingKeys) throws IOException {
+    private void updateConfigWithComments(File userConfigFile) throws IOException {
         // Simpler and more reliable approach:
         // 1. Load user values
         // 2. Copy default config structure
@@ -335,7 +341,7 @@ public class AutoConfigUpdater {
 
         } finally {
             // Clean up temp file
-            tempFile.delete();
+            deleteTempFile(tempFile);
         }
     }
 
@@ -364,7 +370,7 @@ public class AutoConfigUpdater {
     /**
      * Updates messages file while preserving comments and structure
      */
-    private void updateMessagesWithComments(File userMessagesFile, FileConfiguration defaultMessages, Set<String> missingKeys) throws IOException {
+    private void updateMessagesWithComments(File userMessagesFile) throws IOException {
         // Same clean approach for messages
         FileConfiguration userMessages = YamlConfiguration.loadConfiguration(userMessagesFile);
 
@@ -393,7 +399,17 @@ public class AutoConfigUpdater {
 
         } finally {
             // Clean up temp file
-            tempFile.delete();
+            deleteTempFile(tempFile);
+        }
+    }
+
+    private void deleteTempFile(File tempFile) {
+        try {
+            Files.deleteIfExists(tempFile.toPath());
+        } catch (IOException e) {
+            if (isDebugMode()) {
+                plugin.getLogger().warning("Could not delete temporary file " + tempFile.getName() + ": " + e.getMessage());
+            }
         }
     }
 }

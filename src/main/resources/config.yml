@@ -2,7 +2,7 @@
 # A modern sleep voting plugin for Minecraft servers
 
 # Configuration version - Automatically managed, DO NOT MODIFY
-config-version: "2.1"
+config-version: "3"
 
 # ===================================
 # GENERAL SETTINGS
@@ -131,22 +131,56 @@ animation:
       final-sound: "ENTITY_EXPERIENCE_ORB_PICKUP"
 
 # ===================================
+# AFK DETECTION SETTINGS
+# ===================================
+# AFK players are ignored when calculating required votes.
+afk-detection:
+  enabled: true
+
+  # If true, AFK players cannot start or cast a sleep vote.
+  prevent-afk-voting: true
+
+  # Vote2Sleep checks hooks first. If no hook can answer, it uses the internal detector below.
+  hooks:
+    enabled: true
+
+    # Direct integrations
+    essentials: true
+    cmi: true
+
+    # Use this when an AFK plugin exposes only PlaceholderAPI placeholders.
+    placeholderapi:
+      enabled: true
+      placeholders:
+        - "%essentials_afk%"
+        - "%cmi_user_afk%"
+      true-values: [ "true", "yes", "sim", "afk", "1", "on" ]
+      false-values: [ "false", "no", "nao", "active", "not afk", "0", "off" ]
+
+    # Generic reflection hook for plugins with common AFK API names.
+    generic-plugins:
+      - "AFKPlus"
+      - "AdvancedAFK"
+      - "AntiAFKPlus"
+
+    # Extra generic checks. Disable only if another plugin conflicts with them.
+    metadata: true
+    sleeping-ignored: true
+
+  # Fallback detector used when hooks cannot determine the AFK state.
+  internal:
+    enabled: true
+    timeout-seconds: 300
+    track-look-movement: false
+
+# ===================================
 # ADVANCED SETTINGS
 # ===================================
 advanced:
   # Database settings (for statistics tracking)
   database:
     enabled: false
-    type: "SQLITE"  # SQLITE or MYSQL
-
-  # MySQL settings (only used if type is MYSQL)
-  mysql:
-    host: "localhost"
-    port: 3306
-    database: "vote2sleep"
-    username: "root"
-    password: "password"
-    ssl: false
+    type: "SQLITE"
 
   # Check for updates on startup
   update-checker: true

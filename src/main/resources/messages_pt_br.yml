@@ -3,7 +3,7 @@
 # Placeholders disponíveis: {player}, {world}, {current}, {required}, {remaining}, {seconds}, {admin}
 
 # Versão das mensagens - Gerenciada automaticamente, NÃO MODIFICAR
-message-version: "2.2"
+message-version: "3"
 
 # ===================================
 # MENSAGENS GERAIS
@@ -13,6 +13,7 @@ prefix: "&8[&bVote2Sleep&8] &r"
 # Mensagens de erro
 world-not-enabled: "&cVote2Sleep não está ativado neste mundo!"
 player-exempt: "&cVocê está isento da votação de sono!"
+player-afk: "&cVocê está marcado como AFK e foi excluído da votação de sono!"
 cannot-sleep-now: "&cVocê só pode votar para dormir durante a noite ou tempestades!"
 already-voted: "&cVocê já votou para dormir!"
 no-permission: "&cVocê não tem permissão para usar este comando!"

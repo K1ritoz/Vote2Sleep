@@ -46,11 +46,10 @@ public class DatabaseManager {
         try {
             if ("SQLITE".equalsIgnoreCase(dbType)) {
                 setupSQLite();
-            } else if ("MYSQL".equalsIgnoreCase(dbType)) {
-                setupMySQL();
             } else {
-                plugin.getLogger().warning("Unknown database type: " + dbType + ", falling back to SQLite");
-                setupSQLite();
+                plugin.getLogger().warning("Unsupported database type: " + dbType + ". Only SQLITE is currently supported.");
+                this.enabled = false;
+                return;
             }
 
             createTables();
@@ -70,13 +69,6 @@ public class DatabaseManager {
 
         String url = "jdbc:sqlite:" + dataFolder.getAbsolutePath() + "/vote2sleep.db";
         connection = DriverManager.getConnection(url);
-    }
-
-    private void setupMySQL() throws SQLException {
-        // MySQL configuration would go here
-        // For now, fallback to SQLite
-        plugin.getLogger().info("MySQL support not yet implemented, falling back to SQLite");
-        setupSQLite();
     }
 
     private void createTables() throws SQLException {

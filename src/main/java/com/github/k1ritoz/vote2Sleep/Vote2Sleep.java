@@ -221,6 +221,7 @@ public final class Vote2Sleep extends JavaPlugin {
             getServer().getPluginManager().registerEvents(new PlayerConnectionListener(this), this);
             getServer().getPluginManager().registerEvents(new WorldEventListener(this), this);
             getServer().getPluginManager().registerEvents(new WeatherChangeListener(this), this);
+            getServer().getPluginManager().registerEvents(new AfkActivityListener(this), this);
 
             getLogger().info("Event listeners registered successfully");
 

@@ -22,10 +22,6 @@ repositories {
         url = "https://repo.extendedclip.com/content/repositories/placeholderapi/"
     }
     maven {
-        name = "enginehub-maven"
-        url = "https://maven.enginehub.org/repo/"
-    }
-    maven {
         name = "essentials-releases"
         url = "https://repo.essentialsx.net/releases/"
     }
@@ -49,10 +45,6 @@ dependencies {
 
     // Database dependencies (shaded)
     implementation("org.xerial:sqlite-jdbc:3.44.1.0")
-    implementation("com.mysql:mysql-connector-j:9.4.0")
-
-    // Utility libraries (shaded)
-    implementation("org.apache.commons:commons-lang3:3.14.0")
 
     // Testing
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")
@@ -77,8 +69,6 @@ tasks {
         // Relocate shaded dependencies to avoid conflicts
         relocate 'org.bstats', 'com.github.k1ritoz.vote2sleep.lib.bstats'
         relocate 'org.sqlite', 'com.github.k1ritoz.vote2sleep.lib.sqlite'
-        relocate 'com.mysql', 'com.github.k1ritoz.vote2sleep.lib.mysql'
-        relocate 'org.apache.commons.lang3', 'com.github.k1ritoz.vote2sleep.lib.commons'
 
         // Minimize jar size by excluding unused classes
         minimize()
@@ -88,8 +78,6 @@ tasks {
             include(dependency("org.bstats:bstats-bukkit"))
             include(dependency("org.bstats:bstats-base"))
             include(dependency("org.xerial:sqlite-jdbc"))
-            include(dependency("com.mysql:mysql-connector-j"))
-            include(dependency("org.apache.commons:commons-lang3"))
         }
     }
 

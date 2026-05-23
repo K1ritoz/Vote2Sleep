@@ -7,7 +7,7 @@ load: STARTUP
 authors: [ K1ritoz ]
 website: https://github.com/K1ritoz/Vote2Sleep
 description: A modern sleep voting plugin for Minecraft servers
-softdepend: [ PlaceholderAPI, WorldGuard, Essentials ]
+softdepend: [ PlaceholderAPI, Essentials, CMI, AFKPlus, AdvancedAFK, AntiAFKPlus ]
 
 # Commands
 commands:

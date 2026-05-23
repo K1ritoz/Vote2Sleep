@@ -109,6 +109,7 @@ public class MessageManager {
         if (!messages.contains("prefix")) messages.set("prefix", "&8[&bVote2Sleep&8] &r");
         if (!messages.contains("world-not-enabled")) messages.set("world-not-enabled", "&cVote2Sleep is not enabled in this world!");
         if (!messages.contains("player-exempt")) messages.set("player-exempt", "&cYou are exempt from sleep voting!");
+        if (!messages.contains("player-afk")) messages.set("player-afk", "&cYou are marked as AFK and are excluded from sleep voting!");
         if (!messages.contains("cannot-sleep-now")) messages.set("cannot-sleep-now", "&cYou can only vote for sleep during night or storms!");
         if (!messages.contains("already-voted")) messages.set("already-voted", "&cYou have already voted for sleep!");
         if (!messages.contains("vote-removed")) messages.set("vote-removed", "&aYour sleep vote has been removed!");

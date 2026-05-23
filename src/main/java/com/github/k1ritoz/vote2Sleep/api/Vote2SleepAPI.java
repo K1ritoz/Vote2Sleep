@@ -112,31 +112,21 @@ public class Vote2SleepAPI {
      * Get eligible player count for a world (players who can vote)
      */
     public int getEligiblePlayerCount(World world) {
-        return (int) world.getPlayers().stream()
-                .filter(p -> p.getGameMode() != org.bukkit.GameMode.SPECTATOR)
-                .filter(p -> p.getGameMode() != org.bukkit.GameMode.CREATIVE)
-                .filter(p -> !p.hasPermission("vote2sleep.exempt"))
-                .count();
+        return plugin.getVoteManager().getEligiblePlayerCount(world);
     }
 
     /**
      * Check if a player is exempt from voting
      */
     public boolean isPlayerExempt(Player player) {
-        // Check game mode exemptions
-        String gameMode = player.getGameMode().name();
-        if (plugin.getConfigManager().getExemptGameModes().contains(gameMode)) {
-            return true;
-        }
+        return plugin.getVoteManager().isPlayerExempt(player);
+    }
 
-        // Check permission exemptions
-        for (String permission : plugin.getConfigManager().getExemptPermissions()) {
-            if (player.hasPermission(permission)) {
-                return true;
-            }
-        }
-
-        return false;
+    /**
+     * Check if a player is currently considered AFK by Vote2Sleep
+     */
+    public boolean isPlayerAfk(Player player) {
+        return plugin.getVoteManager().isPlayerAfk(player);
     }
 
     /**
