@@ -1,6 +1,8 @@
 package com.github.k1ritoz.vote2Sleep.managers;
 
 import com.github.k1ritoz.vote2Sleep.Vote2Sleep;
+import com.github.k1ritoz.vote2Sleep.utils.SoundResolver;
+import com.github.k1ritoz.vote2Sleep.utils.WorldIdentity;
 import org.bukkit.*;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
@@ -16,7 +18,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * Manages dawn animation effects when sleep voting is successful
  */
 public class DawnAnimationManager {
-
     private final Vote2Sleep plugin;
     private final Map<UUID, BukkitTask> activeAnimations;
     private final Map<UUID, BossBar> animationBossBars;
@@ -54,7 +55,7 @@ public class DawnAnimationManager {
             }
 
             if (plugin.getConfigManager().isDebugMode()) {
-                plugin.getLogger().info("Starting dawn animation for world: " + world.getName());
+                plugin.getLogger().info("Starting dawn animation for world: " + WorldIdentity.key(world));
             }
 
             // Clear existing vote boss bar first
@@ -95,9 +96,7 @@ public class DawnAnimationManager {
         }
 
         // Create visual effects after clearing votes
-        plugin.getPlatformAdapter().runTaskLater(() -> {
-            createAnimationVisuals(world);
-        }, 3L);
+        plugin.getPlatformAdapter().runTaskLater(() -> createAnimationVisuals(world), 3L);
 
         final int[] currentStep = {0};
         final long finalTimePerStep = timePerStep;
@@ -232,6 +231,7 @@ public class DawnAnimationManager {
     /**
      * Sends animation title
      */
+    @SuppressWarnings("deprecation")
     private void sendAnimationTitle(World world, String messageKey) {
         if (!plugin.getConfigManager().areTitlesEnabled()) {
             return;
@@ -249,16 +249,17 @@ public class DawnAnimationManager {
      * Plays dawn animation sound
      */
     private void playDawnSound(World world, String soundName) {
-        try {
-            Sound sound = Sound.valueOf(soundName);
-            for (Player player : world.getPlayers()) {
-                player.playSound(player.getLocation(), sound, 0.6f, 1.1f);
-            }
-        } catch (IllegalArgumentException e) {
-            // Fallback sound
-            for (Player player : world.getPlayers()) {
-                player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.6f, 1.1f);
-            }
+        Sound sound = SoundResolver.resolve(soundName);
+        if (sound == null) {
+            sound = SoundResolver.resolveKey("minecraft:block.amethyst_block.chime");
+        }
+
+        if (sound == null) {
+            return;
+        }
+
+        for (Player player : world.getPlayers()) {
+            player.playSound(player.getLocation(), sound, 0.6f, 1.1f);
         }
     }
 
@@ -304,7 +305,7 @@ public class DawnAnimationManager {
                 plugin.getMessageManager().sendWorldMessage(world, "dawn-animation-complete");
 
                 if (plugin.getConfigManager().isDebugMode()) {
-                    plugin.getLogger().info("Dawn animation completed for world: " + world.getName());
+                    plugin.getLogger().info("Dawn animation completed for world: " + WorldIdentity.key(world));
                 }
             } catch (Exception e) {
                 if (plugin.getConfigManager().isDebugMode()) {
@@ -385,7 +386,7 @@ public class DawnAnimationManager {
         BossBar bossBar = animationBossBars.get(world.getUID());
         if (bossBar != null) {
             plugin.getPlatformAdapter().runTaskLater(() -> {
-                if (bossBar != null && player.isOnline()) {
+                if (player.isOnline()) {
                     bossBar.addPlayer(player);
                 }
             }, 1L);
@@ -395,7 +396,7 @@ public class DawnAnimationManager {
     /**
      * Handles player leaving during animation
      */
-    public void handlePlayerQuit(Player player) {
+    public void handlePlayerQuit() {
         // Boss bars automatically remove players when they disconnect
     }
 }

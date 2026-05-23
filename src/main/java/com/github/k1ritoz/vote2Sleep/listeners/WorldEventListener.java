@@ -1,6 +1,7 @@
 package com.github.k1ritoz.vote2Sleep.listeners;
 
 import com.github.k1ritoz.vote2Sleep.Vote2Sleep;
+import com.github.k1ritoz.vote2Sleep.utils.WorldIdentity;
 import org.bukkit.World;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -18,11 +19,11 @@ public class WorldEventListener implements Listener {
     @EventHandler
     public void onWorldLoad(WorldLoadEvent event) {
         World world = event.getWorld();
-        plugin.getLogger().info("World loaded: " + world.getName());
+        plugin.getLogger().info("World loaded: " + WorldIdentity.key(world));
 
         // Initialize world data if needed
         if (plugin.getConfigManager().isWorldEnabled(world)) {
-            plugin.getLogger().info("Vote2Sleep is enabled for world: " + world.getName());
+            plugin.getLogger().info("Vote2Sleep is enabled for world: " + WorldIdentity.key(world));
         }
     }
 
@@ -33,6 +34,6 @@ public class WorldEventListener implements Listener {
         // Clear any pending votes and tasks for this world
         plugin.getVoteManager().clearVotes(world);
 
-        plugin.getLogger().info("World unloaded: " + world.getName());
+        plugin.getLogger().info("World unloaded: " + WorldIdentity.key(world));
     }
 }

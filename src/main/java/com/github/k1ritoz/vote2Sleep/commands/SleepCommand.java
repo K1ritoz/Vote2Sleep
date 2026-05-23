@@ -1,18 +1,22 @@
 package com.github.k1ritoz.vote2Sleep.commands;
 
 import com.github.k1ritoz.vote2Sleep.Vote2Sleep;
+import com.github.k1ritoz.vote2Sleep.utils.PluginMetadata;
+import com.github.k1ritoz.vote2Sleep.utils.WorldIdentity;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class SleepCommand implements CommandExecutor, TabCompleter {
 
@@ -23,7 +27,8 @@ public class SleepCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
+                             @NotNull String label, @NotNull String[] args) {
 
         if (args.length == 0) {
             if (sender instanceof Player) {
@@ -159,7 +164,7 @@ public class SleepCommand implements CommandExecutor, TabCompleter {
 
         player.sendMessage(plugin.getMessageManager().getMessage("status.header"));
         player.sendMessage(plugin.getMessageManager().getMessage("status.world",
-                Map.of("world", world.getName())));
+                Map.of("world", WorldIdentity.key(world))));
         player.sendMessage(plugin.getMessageManager().getMessage("status.current-votes",
                 Map.of("current", String.valueOf(currentVotes), "required", String.valueOf(requiredVotes))));
         player.sendMessage(plugin.getMessageManager().getMessage("status.you-voted",
@@ -192,7 +197,7 @@ public class SleepCommand implements CommandExecutor, TabCompleter {
         } else {
             plugin.getConfigManager().enableWorld(world);
             plugin.getMessageManager().sendMessage(player, "world-enabled",
-                    Map.of("world", world.getName()));
+                    Map.of("world", WorldIdentity.key(world)));
         }
 
         return true;
@@ -218,7 +223,7 @@ public class SleepCommand implements CommandExecutor, TabCompleter {
             // Clear any existing votes
             plugin.getVoteManager().clearVotes(world);
             plugin.getMessageManager().sendMessage(player, "world-disabled",
-                    Map.of("world", world.getName()));
+                    Map.of("world", WorldIdentity.key(world)));
         }
 
         return true;
@@ -246,7 +251,7 @@ public class SleepCommand implements CommandExecutor, TabCompleter {
         // Display plugin statistics
         sender.sendMessage(plugin.getMessageManager().getMessage("stats.header"));
         sender.sendMessage(plugin.getMessageManager().getMessage("stats.plugin-version",
-                Map.of("version", plugin.getDescription().getVersion())));
+                Map.of("version", PluginMetadata.getVersion(plugin))));
         sender.sendMessage(plugin.getMessageManager().getMessage("stats.platform",
                 Map.of("platform", plugin.getPlatformAdapter().getPlatformName())));
         sender.sendMessage(plugin.getMessageManager().getMessage("stats.enabled-worlds",
@@ -334,7 +339,7 @@ public class SleepCommand implements CommandExecutor, TabCompleter {
             switch (setting) {
                 case "vote-percentage":
                     double percentage = plugin.getConfigManager().getVotePercentage(world);
-                    sender.sendMessage("§7Vote percentage for §e" + world.getName() + "§7: §a" + (percentage * 100) + "%");
+                    sender.sendMessage("§7Vote percentage for §e" + WorldIdentity.key(world) + "§7: §a" + (percentage * 100) + "%");
                     break;
                 case "min-players":
                     int min = plugin.getConfigManager().getMinimumPlayers();
@@ -360,7 +365,7 @@ public class SleepCommand implements CommandExecutor, TabCompleter {
                             return true;
                         }
                         plugin.getConfigManager().setVotePercentage(world, percentage);
-                        sender.sendMessage("§aVote percentage for §e" + world.getName() + "§a set to §e" + (percentage * 100) + "%");
+                        sender.sendMessage("§aVote percentage for §e" + WorldIdentity.key(world) + "§a set to §e" + (percentage * 100) + "%");
                     } catch (NumberFormatException e) {
                         sender.sendMessage("§cInvalid number: " + value);
                     }
@@ -405,7 +410,8 @@ public class SleepCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
+                                      @NotNull String alias, @NotNull String[] args) {
         List<String> completions = new ArrayList<>();
 
         if (args.length == 1) {
@@ -443,13 +449,13 @@ public class SleepCommand implements CommandExecutor, TabCompleter {
         }
 
         if (args.length == 2 && args[0].equalsIgnoreCase("config")) {
-            return Arrays.asList("vote-percentage", "min-players", "max-players").stream()
+            return Stream.of("vote-percentage", "min-players", "max-players")
                     .filter(s -> s.toLowerCase().startsWith(args[1].toLowerCase()))
                     .collect(Collectors.toList());
         }
 
         if (args.length == 2 && args[0].equalsIgnoreCase("language")) {
-            return Arrays.asList("en", "pt_br").stream()
+            return Stream.of("en", "pt_br")
                     .filter(s -> s.toLowerCase().startsWith(args[1].toLowerCase()))
                     .collect(Collectors.toList());
         }

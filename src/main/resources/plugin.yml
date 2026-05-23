@@ -1,7 +1,7 @@
 name: Vote2Sleep
 version: '${version}'
 main: com.github.k1ritoz.vote2Sleep.Vote2Sleep
-api-version: '1.21'
+api-version: '26.1'
 folia-supported: true
 load: STARTUP
 authors: [ K1ritoz ]
@@ -14,13 +14,7 @@ commands:
   sleep:
     description: Vote to skip night or storm
     usage: /sleep [vote|status|enable|disable|reload|stats|cancel|force|help]
-    aliases: [ sleepvote, nightskip ]
-    permission: vote2sleep.use
-
-  v2s:
-    description: Vote2Sleep main command
-    usage: /v2s [vote|status|enable|disable|reload|stats|cancel|force|help]
-    aliases: [ vote2sleep ]
+    aliases: [ sleepvote, nightskip, v2s, vote2sleep ]
     permission: vote2sleep.use
 
 # Permissions

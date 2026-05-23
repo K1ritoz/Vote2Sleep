@@ -21,7 +21,7 @@ public class MessageManager {
     private File messagesFile;
     private String prefix;
     private String currentLanguage;
-    private AutoConfigUpdater autoUpdater;
+    private final AutoConfigUpdater autoUpdater;
 
     public MessageManager(Vote2Sleep plugin) {
         this.plugin = plugin;
@@ -87,7 +87,9 @@ public class MessageManager {
 
     private void createDefaultMessagesFile() {
         try {
-            messagesFile.createNewFile();
+            if (!messagesFile.exists() && !messagesFile.createNewFile()) {
+                plugin.getLogger().warning("Default messages file was not created because it already exists");
+            }
             this.messages = YamlConfiguration.loadConfiguration(messagesFile);
             setDefaultMessages();
             messages.save(messagesFile);
@@ -176,6 +178,7 @@ public class MessageManager {
         if (!messages.contains("skip-subtitle")) messages.set("skip-subtitle", "&eSleep tight! &f✨");
     }
 
+    @SuppressWarnings("deprecation")
     public String getMessage(String key) {
         String message = messages.getString(key, key);
         return ChatColor.translateAlternateColorCodes('&', message);
@@ -272,10 +275,7 @@ public class MessageManager {
         return title;
     }
 
-    public void sendActionBar(Player player, String key) {
-        sendActionBar(player, key, Map.of());
-    }
-
+    @SuppressWarnings("deprecation")
     public void sendActionBar(Player player, String key, Map<String, String> placeholders) {
         if (!plugin.getConfigManager().isActionBarEnabled()) return;
 

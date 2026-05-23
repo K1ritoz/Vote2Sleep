@@ -18,7 +18,7 @@ public class PurpurAdapter implements PlatformAdapter {
 
     @Override
     public boolean isVersionSupported() {
-        return getMinecraftVersion() >= 1210;
+        return MinecraftVersion.isSupported();
     }
 
     @Override
@@ -166,25 +166,4 @@ public class PurpurAdapter implements PlatformAdapter {
         world.setThundering(false);
     }
 
-    /**
-     * Check if Purpur's async chunk loading optimization is available
-     */
-    public boolean hasAsyncChunkOptimizations() {
-        try {
-            Class.forName("org.purpurmc.purpur.chunk.AsyncChunkLoader");
-            return true;
-        } catch (ClassNotFoundException e) {
-            return false;
-        }
-    }
-
-    private int getMinecraftVersion() {
-        try {
-            String version = Bukkit.getBukkitVersion();
-            String[] parts = version.split("-")[0].split("\\.");
-            return Integer.parseInt(parts[1]) * 100 + (parts.length > 2 ? Integer.parseInt(parts[2]) : 0);
-        } catch (Exception e) {
-            return 1210;
-        }
-    }
 }

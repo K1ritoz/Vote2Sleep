@@ -1,13 +1,14 @@
 package com.github.k1ritoz.vote2Sleep.utils;
 
 import com.github.k1ritoz.vote2Sleep.Vote2Sleep;
-import org.bukkit.Bukkit;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
+import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -19,9 +20,7 @@ public class UpdateChecker {
     // Task for periodic update checks
     private BukkitTask updateCheckTask;
 
-    // Cache latest version to avoid spamming console
-    private String cachedLatestVersion = null;
-    private boolean hasNotifiedUpdate = false;
+    private volatile boolean hasNotifiedUpdate = false;
 
     // Check interval: 24 hours = 24 * 60 * 60 * 20 ticks = 1,728,000 ticks
     private static final long CHECK_INTERVAL = 24 * 60 * 60 * 20L;
@@ -73,24 +72,12 @@ public class UpdateChecker {
     }
 
     /**
-     * Forces an immediate update check (always shows result)
-     */
-    public void forceUpdateCheck() {
-        plugin.getPlatformAdapter().runTaskAsync(() -> {
-            // Reset notification flag to allow re-notification
-            hasNotifiedUpdate = false;
-            cachedLatestVersion = null;
-            checkForUpdatesInternal(true); // true = forced check (always show result)
-        });
-    }
-
-    /**
      * Internal method that handles the actual update checking logic
      * @param alwaysLog whether to log results even if no update is available
      */
     private void checkForUpdatesInternal(boolean alwaysLog) {
         try {
-            String currentVersion = plugin.getDescription().getVersion();
+            String currentVersion = PluginMetadata.getVersion(plugin);
             String latestVersion = getLatestVersion();
 
             if (latestVersion == null) {
@@ -99,9 +86,6 @@ public class UpdateChecker {
                 }
                 return;
             }
-
-            // Cache the latest version
-            cachedLatestVersion = latestVersion;
 
             if (!isNewerVersion(currentVersion, latestVersion)) {
                 // No update available
@@ -136,8 +120,7 @@ public class UpdateChecker {
             }
 
             if (plugin.getConfigManager().isDebugMode()) {
-                plugin.getLogger().warning("Update check error details:");
-                e.printStackTrace();
+                plugin.getLogger().log(Level.WARNING, "Update check error details", e);
             }
         }
     }
@@ -147,7 +130,7 @@ public class UpdateChecker {
      * @return latest version string or null if failed
      */
     private String getLatestVersion() throws Exception {
-        URL url = new URL(githubApiUrl);
+        URL url = URI.create(githubApiUrl).toURL();
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("GET");
         connection.setRequestProperty("Accept", "application/vnd.github.v3+json");
@@ -231,19 +214,4 @@ public class UpdateChecker {
         return numericPart.isEmpty() ? 0 : Integer.parseInt(numericPart);
     }
 
-    /**
-     * Gets the currently cached latest version (if any)
-     * @return cached latest version or null
-     */
-    public String getCachedLatestVersion() {
-        return cachedLatestVersion;
-    }
-
-    /**
-     * Checks if an update notification has been sent
-     * @return true if notification was already sent
-     */
-    public boolean hasNotifiedUpdate() {
-        return hasNotifiedUpdate;
-    }
 }

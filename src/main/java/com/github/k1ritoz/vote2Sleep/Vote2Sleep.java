@@ -7,9 +7,13 @@ import com.github.k1ritoz.vote2Sleep.listeners.*;
 import com.github.k1ritoz.vote2Sleep.managers.*;
 import com.github.k1ritoz.vote2Sleep.platform.PlatformAdapter;
 import com.github.k1ritoz.vote2Sleep.platform.PlatformDetector;
+import com.github.k1ritoz.vote2Sleep.utils.PluginMetadata;
 import com.github.k1ritoz.vote2Sleep.utils.UpdateChecker;
 
+import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.logging.Level;
 
 public final class Vote2Sleep extends JavaPlugin {
 
@@ -38,7 +42,7 @@ public final class Vote2Sleep extends JavaPlugin {
     public void onEnable() {
         // Version compatibility check
         if (!platformAdapter.isVersionSupported()) {
-            getLogger().severe("Unsupported server version! Requires MC 1.21+");
+            getLogger().severe("Unsupported server version! Requires Minecraft 26.1+");
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
@@ -65,23 +69,15 @@ public final class Vote2Sleep extends JavaPlugin {
                     // Initialize update checker
                     this.updateChecker = new UpdateChecker(this, "https://api.github.com/repos/k1ritoz/Vote2Sleep/releases/latest");
 
-                    // Verify initialization was successful
-                    if (this.updateChecker != null) {
-                        // Perform initial check and start periodic checking
-                        updateChecker.checkForUpdates();
-                        updateChecker.startPeriodicChecking();
+                    // Perform initial check and start periodic checking
+                    updateChecker.checkForUpdates();
+                    updateChecker.startPeriodicChecking();
 
-                        if (configManager.isDebugMode()) {
-                            getLogger().info("Update checker initialized with 24h periodic checks");
-                        }
-                    } else {
-                        getLogger().warning("Failed to initialize update checker - instance is null");
+                    if (configManager.isDebugMode()) {
+                        getLogger().info("Update checker initialized with 24h periodic checks");
                     }
                 } catch (Exception e) {
-                    getLogger().warning("Failed to initialize update checker: " + e.getMessage());
-                    if (configManager.isDebugMode()) {
-                        e.printStackTrace();
-                    }
+                    getLogger().log(Level.WARNING, "Failed to initialize update checker", e);
                 }
             } else {
                 if (configManager.isDebugMode()) {
@@ -89,12 +85,11 @@ public final class Vote2Sleep extends JavaPlugin {
                 }
             }
 
-            getLogger().info("Vote2Sleep v" + getDescription().getVersion() + " enabled successfully!");
+            getLogger().info("Vote2Sleep v" + PluginMetadata.getVersion(this) + " enabled successfully!");
             getLogger().info("Running on " + platformAdapter.getPlatformName());
 
         } catch (Exception e) {
-            getLogger().severe("Failed to enable Vote2Sleep: " + e.getMessage());
-            e.printStackTrace();
+            getLogger().log(Level.SEVERE, "Failed to enable Vote2Sleep", e);
             getServer().getPluginManager().disablePlugin(this);
         }
     }
@@ -104,7 +99,7 @@ public final class Vote2Sleep extends JavaPlugin {
         try {
             // Plugin ID from bStats
             int pluginId = 26722;
-            org.bstats.bukkit.Metrics metrics = new org.bstats.bukkit.Metrics(this, pluginId);
+            new org.bstats.bukkit.Metrics(this, pluginId);
         } catch (Exception e) {
             // Don't fail plugin loading if metrics fail
         }
@@ -141,8 +136,7 @@ public final class Vote2Sleep extends JavaPlugin {
             getLogger().info("Vote2Sleep disabled successfully!");
 
         } catch (Exception e) {
-            getLogger().severe("Error during plugin shutdown: " + e.getMessage());
-            e.printStackTrace();
+            getLogger().log(Level.SEVERE, "Error during plugin shutdown", e);
         }
     }
 
@@ -188,31 +182,25 @@ public final class Vote2Sleep extends JavaPlugin {
 
     private void registerCommands() {
         try {
-            // Register main command with all aliases
-            if (getCommand("sleep") != null) {
-                SleepCommand sleepCommand = new SleepCommand(this);
-                getCommand("sleep").setExecutor(sleepCommand);
-                getCommand("sleep").setTabCompleter(sleepCommand);
-            }
-
-            // Register alternative command names if they exist
-            if (getCommand("v2s") != null) {
-                SleepCommand sleepCommand = new SleepCommand(this);
-                getCommand("v2s").setExecutor(sleepCommand);
-                getCommand("v2s").setTabCompleter(sleepCommand);
-            }
-
-            if (getCommand("vote2sleep") != null) {
-                SleepCommand sleepCommand = new SleepCommand(this);
-                getCommand("vote2sleep").setExecutor(sleepCommand);
-                getCommand("vote2sleep").setTabCompleter(sleepCommand);
-            }
+            SleepCommand sleepCommand = new SleepCommand(this);
+            registerCommand("sleep", sleepCommand);
 
             getLogger().info("Commands registered successfully");
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to register commands", e);
         }
+    }
+
+    private void registerCommand(String commandName, SleepCommand sleepCommand) {
+        PluginCommand command = getCommand(commandName);
+        if (command == null) {
+            getLogger().warning("Command '" + commandName + "' is missing from plugin.yml");
+            return;
+        }
+
+        command.setExecutor(sleepCommand);
+        command.setTabCompleter(sleepCommand);
     }
 
     private void registerListeners() {
@@ -299,16 +287,4 @@ public final class Vote2Sleep extends JavaPlugin {
         return api;
     }
 
-    /**
-     * Check if the plugin is fully initialized
-     */
-    public boolean isFullyInitialized() {
-        return configManager != null &&
-                messageManager != null &&
-                voteManager != null &&
-                effectsManager != null &&
-                databaseManager != null &&
-                hooksManager != null &&
-                dawnAnimationManager != null;
-    }
 }

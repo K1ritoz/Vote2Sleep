@@ -6,7 +6,10 @@ import com.github.k1ritoz.vote2Sleep.data.SleepVote;
 import com.github.k1ritoz.vote2Sleep.data.WorldData;
 import com.github.k1ritoz.vote2Sleep.platform.FoliaAdapter;
 import com.github.k1ritoz.vote2Sleep.platform.PurpurAdapter;
+import com.github.k1ritoz.vote2Sleep.utils.WorldIdentity;
 import org.bukkit.*;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
@@ -219,7 +222,7 @@ public class SleepVoteManager {
                 // Night/storm has ended naturally, clear all votes and boss bar
                 clearVotes(w);
                 if (plugin.getConfigManager().isDebugMode()) {
-                    plugin.getLogger().info("Natural night/storm end detected in world " + w.getName() + ", clearing votes");
+                    plugin.getLogger().info("Natural night/storm end detected in world " + WorldIdentity.key(w) + ", clearing votes");
                 }
             }
         }, 20L, 20L); // Check every second
@@ -316,7 +319,7 @@ public class SleepVoteManager {
 
         if (shouldAnimate) {
             if (plugin.getConfigManager().isDebugMode()) {
-                plugin.getLogger().info("Starting dawn animation for night skip in world: " + world.getName());
+                plugin.getLogger().info("Starting dawn animation for night skip in world: " + WorldIdentity.key(world));
             }
 
             // Start dawn animation
@@ -333,7 +336,7 @@ public class SleepVoteManager {
 
         } else {
             if (plugin.getConfigManager().isDebugMode()) {
-                plugin.getLogger().info("Performing immediate skip actions (no animation) for world: " + world.getName());
+                plugin.getLogger().info("Performing immediate skip actions (no animation) for world: " + WorldIdentity.key(world));
             }
 
             // Immediately perform skip actions if animation is disabled or it's storm skip
@@ -364,9 +367,7 @@ public class SleepVoteManager {
                 // Only set time if not handled by animation
                 if (shouldSetTime) {
                     // Use Purpur optimizations if available
-                    if (plugin.getPlatformAdapter() instanceof PurpurAdapter) {
-                        PurpurAdapter purpurAdapter = (PurpurAdapter) plugin.getPlatformAdapter();
-
+                    if (plugin.getPlatformAdapter() instanceof PurpurAdapter purpurAdapter) {
                         // Skip time with Purpur optimization
                         if (isNight(w) && plugin.getConfigManager().isNightSkipAllowed()) {
                             purpurAdapter.setWorldTimeOptimized(w, 1000);
@@ -390,8 +391,8 @@ public class SleepVoteManager {
                 } else {
                     // Animation handled time, but we still need to clear weather if needed
                     if (plugin.getConfigManager().shouldClearWeather()) {
-                        if (plugin.getPlatformAdapter() instanceof PurpurAdapter) {
-                            ((PurpurAdapter) plugin.getPlatformAdapter()).clearWeatherOptimized(w);
+                        if (plugin.getPlatformAdapter() instanceof PurpurAdapter purpurAdapter) {
+                            purpurAdapter.clearWeatherOptimized(w);
                         } else {
                             w.setStorm(false);
                             w.setThundering(false);
@@ -421,7 +422,7 @@ public class SleepVoteManager {
 
                         // Heal and feed players
                         if (plugin.getConfigManager().shouldHealPlayers()) {
-                            p.setHealth(p.getMaxHealth());
+                            p.setHealth(getMaxHealth(p));
                         }
                         if (plugin.getConfigManager().shouldFeedPlayers()) {
                             p.setFoodLevel(20);
@@ -429,8 +430,8 @@ public class SleepVoteManager {
                         }
 
                         // Use Purpur optimization if available
-                        if (plugin.getPlatformAdapter() instanceof PurpurAdapter) {
-                            ((PurpurAdapter) plugin.getPlatformAdapter()).optimizePlayerOperation(p, () -> {
+                        if (plugin.getPlatformAdapter() instanceof PurpurAdapter purpurAdapter) {
+                            purpurAdapter.optimizePlayerOperation(p, () -> {
                                 // Additional Purpur optimizations here if needed
                             });
                         }
@@ -458,8 +459,7 @@ public class SleepVoteManager {
 
         // EFFECTS - for effects that need specific coordinates, use region (only if animation is disabled)
         if (shouldSetTime) {
-            if (plugin.getPlatformAdapter() instanceof FoliaAdapter) {
-                FoliaAdapter foliaAdapter = (FoliaAdapter) plugin.getPlatformAdapter();
+            if (plugin.getPlatformAdapter() instanceof FoliaAdapter foliaAdapter) {
                 foliaAdapter.runRegionSpecificEffects(world, (w) -> {
                     try {
                         plugin.getEffectsManager().playSkipEffects(w, votes, wasNight);
@@ -482,7 +482,7 @@ public class SleepVoteManager {
 
     // Utility methods
     private WorldData getOrCreateWorldData(World world) {
-        return worldDataMap.computeIfAbsent(world.getUID(), k -> new WorldData(world));
+        return worldDataMap.computeIfAbsent(world.getUID(), ignored -> new WorldData(world));
     }
 
     public boolean isPlayerExempt(Player player) {
@@ -579,7 +579,7 @@ public class SleepVoteManager {
                 if (currentColor != configColor || currentStyle != configStyle) {
                     needsRecreation = true;
                     if (plugin.getConfigManager().isDebugMode()) {
-                        plugin.getLogger().info("BossBar settings changed after reload, recreating for world " + world.getName());
+                        plugin.getLogger().info("BossBar settings changed after reload, recreating for world " + WorldIdentity.key(world));
                     }
                 }
 
@@ -597,7 +597,7 @@ public class SleepVoteManager {
             } catch (Exception e) {
                 // Corrupted BossBar instance
                 if (plugin.getConfigManager().isDebugMode()) {
-                    plugin.getLogger().warning("BossBar corrupted for world " + world.getName() + ", recreating: " + e.getMessage());
+                    plugin.getLogger().warning("BossBar corrupted for world " + WorldIdentity.key(world) + ", recreating: " + e.getMessage());
                 }
                 needsRecreation = true;
             }
@@ -635,10 +635,10 @@ public class SleepVoteManager {
                 worldBossBars.put(world.getUID(), bossBar);
 
                 if (plugin.getConfigManager().isDebugMode()) {
-                    plugin.getLogger().info("Created new BossBar for world " + world.getName());
+                    plugin.getLogger().info("Created new BossBar for world " + WorldIdentity.key(world));
                 }
             } catch (Exception e) {
-                plugin.getLogger().severe("Failed to create BossBar for world " + world.getName() + ": " + e.getMessage());
+                plugin.getLogger().severe("Failed to create BossBar for world " + WorldIdentity.key(world) + ": " + e.getMessage());
                 return;
             }
         }
@@ -713,7 +713,7 @@ public class SleepVoteManager {
                 }
 
             } catch (Exception e) {
-                plugin.getLogger().warning("Error updating BossBar for world " + world.getName() + ": " + e.getMessage());
+                plugin.getLogger().warning("Error updating BossBar for world " + WorldIdentity.key(world) + ": " + e.getMessage());
 
                 // On repeated errors, remove corrupted BossBar
                 worldBossBars.remove(world.getUID());
@@ -924,7 +924,7 @@ public class SleepVoteManager {
 
         // Handle dawn animation player quit
         if (plugin.getDawnAnimationManager() != null) {
-            plugin.getDawnAnimationManager().handlePlayerQuit(player);
+            plugin.getDawnAnimationManager().handlePlayerQuit();
         }
     }
 
@@ -943,6 +943,11 @@ public class SleepVoteManager {
         if (bossBar != null && !bossBar.getPlayers().contains(player)) {
             bossBar.addPlayer(player);
         }
+    }
+
+    private double getMaxHealth(Player player) {
+        AttributeInstance maxHealth = player.getAttribute(Attribute.MAX_HEALTH);
+        return maxHealth != null ? maxHealth.getValue() : 20.0;
     }
 
     public void shutdown() {

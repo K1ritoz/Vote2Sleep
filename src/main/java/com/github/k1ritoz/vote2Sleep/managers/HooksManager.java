@@ -38,8 +38,6 @@ public class HooksManager {
     private final ThreadLocal<Boolean> resolvingPlaceholderAfk = ThreadLocal.withInitial(() -> false);
 
     private volatile boolean placeholderAPIHooked = false;
-    private volatile boolean essentialsHooked = false;
-    private volatile boolean cmiHooked = false;
     private volatile Vote2SleepPlaceholders placeholderExpansion = null;
 
     public HooksManager(Vote2Sleep plugin) {
@@ -85,8 +83,6 @@ public class HooksManager {
 
     private void initializeAfkHooks() {
         afkHooks.clear();
-        essentialsHooked = false;
-        cmiHooked = false;
 
         if (!plugin.getConfigManager().isAfkDetectionEnabled()) {
             plugin.getLogger().info("AFK detection disabled in configuration");
@@ -113,7 +109,6 @@ public class HooksManager {
             Plugin essentials = getEnabledPlugin("Essentials");
             if (essentials != null) {
                 afkHooks.add(new EssentialsAfkHook(essentials));
-                essentialsHooked = true;
                 plugin.getLogger().info("Essentials AFK hook enabled");
             }
         }
@@ -122,7 +117,6 @@ public class HooksManager {
             Plugin cmi = getEnabledPlugin("CMI");
             if (cmi != null) {
                 afkHooks.add(new CmiAfkHook(cmi));
-                cmiHooked = true;
                 plugin.getLogger().info("CMI AFK hook enabled");
             }
         }
@@ -166,24 +160,10 @@ public class HooksManager {
         unregisterPlaceholderExpansion();
 
         placeholderAPIHooked = false;
-        essentialsHooked = false;
-        cmiHooked = false;
         placeholderExpansion = null;
         afkHooks.clear();
 
         initializeHooks();
-    }
-
-    /**
-     * Check if a specific plugin is available and enabled
-     */
-    public boolean isPluginAvailable(String pluginName) {
-        try {
-            return Bukkit.getPluginManager().getPlugin(pluginName) != null &&
-                    Bukkit.getPluginManager().isPluginEnabled(pluginName);
-        } catch (Exception e) {
-            return false;
-        }
     }
 
     public boolean isPlayerAfk(Player player) {
@@ -336,17 +316,15 @@ public class HooksManager {
         return false;
     }
 
+    @SuppressWarnings("deprecation")
     private String normalizeAfkText(String value) {
         if (value == null) {
             return "";
         }
 
-        String strippedValue = ChatColor.stripColor(value.replaceAll("(?i)&[0-9A-FK-ORX]", ""));
-        if (strippedValue == null) {
-            return "";
-        }
-
-        return strippedValue.trim().toLowerCase(Locale.ROOT);
+        return ChatColor.stripColor(value.replaceAll("(?i)&[0-9A-FK-ORX]", ""))
+                .trim()
+                .toLowerCase(Locale.ROOT);
     }
 
     private List<String> getAfkHookNames() {
@@ -364,22 +342,6 @@ public class HooksManager {
     // Getters
     public boolean isPlaceholderAPIHooked() {
         return placeholderAPIHooked;
-    }
-
-    public boolean isEssentialsHooked() {
-        return essentialsHooked;
-    }
-
-    public boolean isCmiHooked() {
-        return cmiHooked;
-    }
-
-    public boolean hasAfkHooks() {
-        return !afkHooks.isEmpty() || plugin.getConfigManager().isInternalAfkDetectionEnabled();
-    }
-
-    public Vote2SleepPlaceholders getPlaceholderExpansion() {
-        return placeholderExpansion;
     }
 
     /**
@@ -610,7 +572,8 @@ public class HooksManager {
         }
     }
 
-    private class MetadataAfkHook implements AfkHook {
+    @SuppressWarnings("deprecation")
+    private static class MetadataAfkHook implements AfkHook {
         @Override
         public String getName() {
             return "PlayerMetadata";
@@ -655,7 +618,7 @@ public class HooksManager {
         }
     }
 
-    private class SleepingIgnoredAfkHook implements AfkHook {
+    private static class SleepingIgnoredAfkHook implements AfkHook {
         @Override
         public String getName() {
             return "BukkitSleepingIgnored";

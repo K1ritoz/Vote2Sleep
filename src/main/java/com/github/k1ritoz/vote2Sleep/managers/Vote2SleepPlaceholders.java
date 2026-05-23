@@ -1,7 +1,8 @@
 package com.github.k1ritoz.vote2Sleep.managers;
 
 import com.github.k1ritoz.vote2Sleep.Vote2Sleep;
-import com.github.k1ritoz.vote2Sleep.data.WorldData;
+import com.github.k1ritoz.vote2Sleep.utils.PluginMetadata;
+import com.github.k1ritoz.vote2Sleep.utils.WorldIdentity;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -25,13 +26,13 @@ public class Vote2SleepPlaceholders extends PlaceholderExpansion {
     @Override
     @NotNull
     public String getAuthor() {
-        return String.join(", ", plugin.getDescription().getAuthors());
+        return String.join(", ", PluginMetadata.getAuthors(plugin));
     }
 
     @Override
     @NotNull
     public String getVersion() {
-        return plugin.getDescription().getVersion();
+        return PluginMetadata.getVersion(plugin);
     }
 
     @Override
@@ -118,7 +119,7 @@ public class Vote2SleepPlaceholders extends PlaceholderExpansion {
                     return String.format("%.2f", requiredVotesDecimal > 0 ? (currentVotesDecimal / (double) requiredVotesDecimal) : 0.0);
 
                 case "world_name":
-                    return world.getName();
+                    return WorldIdentity.key(world);
 
                 case "vote_percentage_setting":
                     double percentage = plugin.getConfigManager().getVotePercentage(world);
@@ -172,7 +173,7 @@ public class Vote2SleepPlaceholders extends PlaceholderExpansion {
         try {
             switch (params.toLowerCase()) {
                 case "plugin_version":
-                    return plugin.getDescription().getVersion();
+                    return PluginMetadata.getVersion(plugin);
 
                 case "platform":
                     return plugin.getPlatformAdapter() != null ? plugin.getPlatformAdapter().getPlatformName() : "Unknown";

@@ -51,6 +51,7 @@ public class AfkActivityListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @SuppressWarnings("deprecation")
     public void onPlayerChat(AsyncPlayerChatEvent event) {
         plugin.getHooksManager().recordPlayerActivity(event.getPlayer());
     }

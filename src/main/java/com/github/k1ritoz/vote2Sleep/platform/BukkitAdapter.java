@@ -25,7 +25,7 @@ public class BukkitAdapter implements PlatformAdapter {
 
     @Override
     public boolean isVersionSupported() {
-        return getMinecraftVersion() >= 1210; // 1.21.0
+        return MinecraftVersion.isSupported();
     }
 
     @Override
@@ -74,11 +74,5 @@ public class BukkitAdapter implements PlatformAdapter {
     @Override
     public boolean isAsyncSafe() {
         return true; // Bukkit/Spigot/Paper/Purpur is generally safe for async tasks
-    }
-
-    private int getMinecraftVersion() {
-        String version = Bukkit.getBukkitVersion();
-        String[] parts = version.split("-")[0].split("\\.");
-        return Integer.parseInt(parts[1]) * 100 + (parts.length > 2 ? Integer.parseInt(parts[2]) : 0);
     }
 }

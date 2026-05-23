@@ -2,11 +2,11 @@ package com.github.k1ritoz.vote2Sleep.managers;
 
 import com.github.k1ritoz.vote2Sleep.Vote2Sleep;
 import com.github.k1ritoz.vote2Sleep.data.SleepVote;
+import com.github.k1ritoz.vote2Sleep.utils.WorldIdentity;
 import org.bukkit.World;
 
 import java.io.File;
 import java.sql.*;
-import java.time.LocalDateTime;
 import java.util.List;
 
 public class DatabaseManager {
@@ -63,8 +63,8 @@ public class DatabaseManager {
 
     private void setupSQLite() throws SQLException {
         File dataFolder = plugin.getDataFolder();
-        if (!dataFolder.exists()) {
-            dataFolder.mkdirs();
+        if (!dataFolder.exists() && !dataFolder.mkdirs()) {
+            throw new SQLException("Could not create plugin data folder: " + dataFolder.getAbsolutePath());
         }
 
         String url = "jdbc:sqlite:" + dataFolder.getAbsolutePath() + "/vote2sleep.db";
@@ -117,7 +117,7 @@ public class DatabaseManager {
 
             int skipEventId;
             try (PreparedStatement stmt = connection.prepareStatement(insertSkipEvent, Statement.RETURN_GENERATED_KEYS)) {
-                stmt.setString(1, world.getName());
+                stmt.setString(1, WorldIdentity.key(world));
                 stmt.setString(2, world.getUID().toString());
                 stmt.setInt(3, votes.size());
                 stmt.setString(4, determineSkipType(world));

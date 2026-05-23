@@ -1,6 +1,7 @@
 package com.github.k1ritoz.vote2Sleep.config;
 
 import com.github.k1ritoz.vote2Sleep.Vote2Sleep;
+import com.github.k1ritoz.vote2Sleep.utils.WorldIdentity;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -53,6 +54,7 @@ public class ConfigurationManager {
             }
         }
         this.worldConfig = YamlConfiguration.loadConfiguration(worldsFile);
+        this.worldConfig.options().pathSeparator(WorldIdentity.CONFIG_PATH_SEPARATOR);
 
         // Set default if not exist (this won't override existing values)
         setDefaults();
@@ -83,8 +85,8 @@ public class ConfigurationManager {
         if (!config.contains("display.titles.stay")) config.set("display.titles.stay", 70);
         if (!config.contains("display.titles.fade-out")) config.set("display.titles.fade-out", 20);
         if (!config.contains("display.sounds.enabled")) config.set("display.sounds.enabled", true);
-        if (!config.contains("display.sounds.vote-sound")) config.set("display.sounds.vote-sound", "BLOCK_NOTE_BLOCK_CHIME");
-        if (!config.contains("display.sounds.skip-sound")) config.set("display.sounds.skip-sound", "ENTITY_EXPERIENCE_ORB_PICKUP");
+        if (!config.contains("display.sounds.vote-sound")) config.set("display.sounds.vote-sound", "minecraft:block.note_block.chime");
+        if (!config.contains("display.sounds.skip-sound")) config.set("display.sounds.skip-sound", "minecraft:entity.experience_orb.pickup");
         if (!config.contains("display.actionbar.enabled")) config.set("display.actionbar.enabled", true);
 
         // Effects settings
@@ -102,8 +104,8 @@ public class ConfigurationManager {
         config.addDefault("animation.dawn.boss-bar.style", "SOLID");
         config.addDefault("animation.dawn.particles.enabled", true);
         config.addDefault("animation.dawn.particles.type", "ENCHANT");
-        config.addDefault("animation.dawn.sounds.animation-sound", "BLOCK_AMETHYST_BLOCK_CHIME");
-        config.addDefault("animation.dawn.sounds.final-sound", "ENTITY_EXPERIENCE_ORB_PICKUP");
+        config.addDefault("animation.dawn.sounds.animation-sound", "minecraft:block.amethyst_block.chime");
+        config.addDefault("animation.dawn.sounds.final-sound", "minecraft:entity.experience_orb.pickup");
 
         // Advanced settings
         if (!config.contains("advanced.database.enabled")) config.set("advanced.database.enabled", false);
@@ -135,16 +137,16 @@ public class ConfigurationManager {
 
     // World Management
     public boolean isWorldEnabled(World world) {
-        return worldConfig.getBoolean("worlds." + world.getName() + ".enabled", false);
+        return worldConfig.getBoolean(WorldIdentity.configPath(world, "enabled"), false);
     }
 
     public void enableWorld(World world) {
-        worldConfig.set("worlds." + world.getName() + ".enabled", true);
+        worldConfig.set(WorldIdentity.configPath(world, "enabled"), true);
         saveWorldsConfig();
     }
 
     public void disableWorld(World world) {
-        worldConfig.set("worlds." + world.getName() + ".enabled", false);
+        worldConfig.set(WorldIdentity.configPath(world, "enabled"), false);
         saveWorldsConfig();
     }
 
@@ -157,12 +159,12 @@ public class ConfigurationManager {
 
     // World-specific settings
     public double getVotePercentage(World world) {
-        return worldConfig.getDouble("worlds." + world.getName() + ".vote-percentage",
+        return worldConfig.getDouble(WorldIdentity.configPath(world, "vote-percentage"),
                 config.getDouble("settings.vote-percentage"));
     }
 
     public void setVotePercentage(World world, double percentage) {
-        worldConfig.set("worlds." + world.getName() + ".vote-percentage", percentage);
+        worldConfig.set(WorldIdentity.configPath(world, "vote-percentage"), percentage);
         saveWorldsConfig();
     }
 

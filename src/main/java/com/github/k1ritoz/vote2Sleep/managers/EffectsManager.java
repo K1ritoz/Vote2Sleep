@@ -2,6 +2,7 @@ package com.github.k1ritoz.vote2Sleep.managers;
 
 import com.github.k1ritoz.vote2Sleep.Vote2Sleep;
 import com.github.k1ritoz.vote2Sleep.data.SleepVote;
+import com.github.k1ritoz.vote2Sleep.utils.SoundResolver;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 
@@ -36,6 +37,7 @@ public class EffectsManager {
         }
     }
 
+    @SuppressWarnings("deprecation")
     public void playSkipEffects(World world, List<SleepVote> votes, boolean wasNight) {
         // Sound effect
         if (plugin.getConfigManager().areSoundsEnabled()) {
@@ -92,17 +94,18 @@ public class EffectsManager {
     }
 
     private void playSound(World world, String soundName) {
-        try {
-            Sound sound = Sound.valueOf(soundName);
-            for (Player player : world.getPlayers()) {
-                player.playSound(player.getLocation(), sound, 1.0f, 1.0f);
-            }
-        } catch (IllegalArgumentException e) {
+        Sound sound = SoundResolver.resolve(soundName);
+        if (sound == null) {
             plugin.getLogger().warning("Invalid sound name: " + soundName);
-            // Fallback to default sound
-            for (Player player : world.getPlayers()) {
-                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
-            }
+            sound = SoundResolver.resolveKey("minecraft:entity.experience_orb.pickup");
+        }
+
+        if (sound == null) {
+            return;
+        }
+
+        for (Player player : world.getPlayers()) {
+            player.playSound(player.getLocation(), sound, 1.0f, 1.0f);
         }
     }
 

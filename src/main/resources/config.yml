@@ -70,8 +70,8 @@ display:
   # Sound effects
   sounds:
     enabled: true
-    vote-sound: "BLOCK_NOTE_BLOCK_CHIME"
-    skip-sound: "ENTITY_EXPERIENCE_ORB_PICKUP"
+    vote-sound: "minecraft:block.note_block.chime"
+    skip-sound: "minecraft:entity.experience_orb.pickup"
 
   # Action bar messages
   actionbar:
@@ -127,8 +127,8 @@ animation:
 
     # Sound effects during animation
     sounds:
-      animation-sound: "BLOCK_AMETHYST_BLOCK_CHIME"
-      final-sound: "ENTITY_EXPERIENCE_ORB_PICKUP"
+      animation-sound: "minecraft:block.amethyst_block.chime"
+      final-sound: "minecraft:entity.experience_orb.pickup"
 
 # ===================================
 # AFK DETECTION SETTINGS

@@ -5,9 +5,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
 import java.util.function.Consumer;
+import java.util.logging.Level;
 
 public class FoliaAdapter implements PlatformAdapter {
 
@@ -20,7 +22,7 @@ public class FoliaAdapter implements PlatformAdapter {
 
     @Override
     public boolean isVersionSupported() {
-        return getMinecraftVersion() >= 1210; // 1.21.0
+        return MinecraftVersion.isSupported();
     }
 
     @Override
@@ -30,7 +32,7 @@ public class FoliaAdapter implements PlatformAdapter {
             Object scheduledTask = scheduler.getClass()
                     .getMethod("runDelayed", org.bukkit.plugin.Plugin.class,
                             java.util.function.Consumer.class, long.class)
-                    .invoke(scheduler, plugin, (java.util.function.Consumer<Object>) (t) -> {
+                    .invoke(scheduler, plugin, (java.util.function.Consumer<Object>) ignored -> {
                         try {
                             task.run();
                         } catch (Exception e) {
@@ -51,7 +53,7 @@ public class FoliaAdapter implements PlatformAdapter {
             Object scheduledTask = scheduler.getClass()
                     .getMethod("runAtFixedRate", org.bukkit.plugin.Plugin.class,
                             java.util.function.Consumer.class, long.class, long.class)
-                    .invoke(scheduler, plugin, (java.util.function.Consumer<Object>) (t) -> {
+                    .invoke(scheduler, plugin, (java.util.function.Consumer<Object>) ignored -> {
                         try {
                             task.run();
                         } catch (Exception e) {
@@ -72,7 +74,7 @@ public class FoliaAdapter implements PlatformAdapter {
             Object scheduledTask = scheduler.getClass()
                     .getMethod("runNow", org.bukkit.plugin.Plugin.class,
                             java.util.function.Consumer.class)
-                    .invoke(scheduler, plugin, (java.util.function.Consumer<Object>) (t) -> {
+                    .invoke(scheduler, plugin, (java.util.function.Consumer<Object>) ignored -> {
                         try {
                             task.run();
                         } catch (Exception e) {
@@ -115,19 +117,18 @@ public class FoliaAdapter implements PlatformAdapter {
                             org.bukkit.World.class, int.class, int.class,
                             java.util.function.Consumer.class, long.class)
                     .invoke(scheduler, plugin, world, chunkX, chunkZ,
-                            (java.util.function.Consumer<Object>) (t) -> {
+                            (java.util.function.Consumer<Object>) ignored -> {
                                 try {
                                     // Execute on the region thread
                                     task.accept(world);
                                 } catch (Exception e) {
-                                    plugin.getLogger().warning("Error in Folia world region task: " + e.getMessage());
-                                    e.printStackTrace();
+                                    plugin.getLogger().log(Level.WARNING, "Error in Folia world region task", e);
                                 }
                             }, delay);
             return new FoliaTaskWrapper(scheduledTask);
         } catch (Exception e) {
-            plugin.getLogger().warning("Failed to schedule Folia world region task, falling back to global scheduler: " + e.getMessage());
-            e.printStackTrace();
+            plugin.getLogger().log(Level.WARNING,
+                    "Failed to schedule Folia world region task, falling back to global scheduler", e);
             // Fallback to global scheduler
             return runTaskLater(() -> task.accept(world), delay);
         }
@@ -142,7 +143,7 @@ public class FoliaAdapter implements PlatformAdapter {
                     .getMethod("runDelayed", org.bukkit.plugin.Plugin.class,
                             java.util.function.Consumer.class, Runnable.class, long.class)
                     .invoke(scheduler, plugin,
-                            (java.util.function.Consumer<Object>) (t) -> {
+                            (java.util.function.Consumer<Object>) ignored -> {
                                 try {
                                     if (player.isOnline()) { // Safety check
                                         task.accept(player);
@@ -177,14 +178,8 @@ public class FoliaAdapter implements PlatformAdapter {
      * Specific method for effects that need the region thread
      * (like spawning entities at specific coordinates)
      */
-    public BukkitTask runRegionSpecificEffects(World world, Consumer<World> effectsTask, long delay) {
-        return runTaskLaterForWorldRegion(world, effectsTask, delay);
-    }
-
-    private int getMinecraftVersion() {
-        String version = Bukkit.getBukkitVersion();
-        String[] parts = version.split("-")[0].split("\\.");
-        return Integer.parseInt(parts[1]) * 100 + (parts.length > 2 ? Integer.parseInt(parts[2]) : 0);
+    public void runRegionSpecificEffects(World world, Consumer<World> effectsTask, long delay) {
+        runTaskLaterForWorldRegion(world, effectsTask, delay);
     }
 
     /**
@@ -204,6 +199,7 @@ public class FoliaAdapter implements PlatformAdapter {
         }
 
         @Override
+        @NotNull
         public org.bukkit.plugin.Plugin getOwner() {
             try {
                 Method method = findMethod(scheduledTask.getClass(), "getOwningPlugin");

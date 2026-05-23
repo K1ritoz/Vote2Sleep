@@ -1,7 +1,7 @@
 plugins {
     id 'java'
-    id 'com.gradleup.shadow' version '8.3.0'
-    id("xyz.jpenilla.run-paper") version "2.3.1"
+    id 'com.gradleup.shadow' version '9.4.1'
+    id("xyz.jpenilla.run-paper") version "3.0.2"
 }
 
 group = 'com.github.k1ritoz'
@@ -32,7 +32,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:26.1.2.build.+")
 
     // Optional dependencies
     compileOnly("me.clip:placeholderapi:2.11.6")
@@ -54,7 +54,7 @@ dependencies {
 tasks {
     runServer {
         // Configure the Minecraft version for our task.
-        minecraftVersion("1.21.4")
+        minecraftVersion("26.1.2")
 
         // Download plugins for testing
         downloadPlugins {
@@ -92,7 +92,7 @@ tasks {
     processResources {
         def props = [version: version]
         inputs.properties props
-        filteringCharset 'UTF-8'
+        filteringCharset = 'UTF-8'
         filesMatching('plugin.yml') {
             expand props
         }
@@ -113,7 +113,7 @@ tasks {
     }
 }
 
-def targetJavaVersion = 21
+def targetJavaVersion = 25
 java {
     def javaVersion = JavaVersion.toVersion(targetJavaVersion)
     sourceCompatibility = javaVersion
@@ -125,6 +125,7 @@ java {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+    options.compilerArgs.add('-Xlint:deprecation')
 
     if (targetJavaVersion >= 10 || JavaVersion.current().isJava10Compatible()) {
         options.release.set(targetJavaVersion)
