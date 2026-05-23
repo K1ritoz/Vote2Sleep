@@ -25,6 +25,8 @@ public class UpdateChecker {
 
     // Check interval: 24 hours = 24 * 60 * 60 * 20 ticks = 1,728,000 ticks
     private static final long CHECK_INTERVAL = 24 * 60 * 60 * 20L;
+    private static final String GITHUB_DOWNLOAD_URL = "https://github.com/K1ritoz/Vote2Sleep/releases/latest";
+    private static final String MODRINTH_DOWNLOAD_URL = "https://modrinth.com/plugin/vote2sleep";
 
     public UpdateChecker(Vote2Sleep plugin, String githubApiUrl) {
         this.plugin = plugin;
@@ -120,7 +122,8 @@ public class UpdateChecker {
                 plugin.getLogger().info("    UPDATE AVAILABLE!");
                 plugin.getLogger().info("    Current: " + currentVersion);
                 plugin.getLogger().info("    Latest:  " + latestVersion);
-                plugin.getLogger().info("    Download: https://github.com/k1ritoz/Vote2Sleep/releases/latest");
+                plugin.getLogger().info("    Download (GitHub):   " + GITHUB_DOWNLOAD_URL);
+                plugin.getLogger().info("    Download (Modrinth): " + MODRINTH_DOWNLOAD_URL);
                 plugin.getLogger().info("═══════════════════════════════════");
 
                 // Mark as notified to prevent spam in periodic checks
